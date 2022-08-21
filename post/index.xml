@@ -2,17 +2,17 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Posts on A lifelong learner.</title>
-    <link>egolearner.github.io/post/</link>
+    <link>https://egolearner.github.io/post/</link>
     <description>Recent content in Posts on A lifelong learner.</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-cn</language>
-    <lastBuildDate>Sun, 21 Aug 2022 22:06:36 +0800</lastBuildDate><atom:link href="egolearner.github.io/post/index.xml" rel="self" type="application/rss+xml" />
+    <lastBuildDate>Sun, 21 Aug 2022 22:06:36 +0800</lastBuildDate><atom:link href="https://egolearner.github.io/post/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>论文笔记：PolarDB Serverless</title>
-      <link>egolearner.github.io/post/polardb-serverless/</link>
+      <link>https://egolearner.github.io/post/polardb-serverless/</link>
       <pubDate>Sun, 21 Aug 2022 22:06:36 +0800</pubDate>
       
-      <guid>egolearner.github.io/post/polardb-serverless/</guid>
+      <guid>https://egolearner.github.io/post/polardb-serverless/</guid>
       <description>Authors: Wei Cao, Yingqiang Zhang Created: August 21, 2022 7:46 AM PublishedAt: SIGMOD Tags: Database, serverless URL: https://www.cs.utah.edu/~lifeifei/papers/polardbserverless-sigmod21.pdf Year: 2021 Summary 通过计算、内存和存储的分离，来支持serverless按需分配资源。相当于将单机的实现原语扩展到分</description>
     </item>
     

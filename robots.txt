@@ -1,2 +1,2 @@
 User-agent: *
-Sitemap: egolearner.github.io/sitemap.xml
+Sitemap: https://egolearner.github.io/sitemap.xml
