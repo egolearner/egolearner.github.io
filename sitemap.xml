@@ -3,18 +3,56 @@
   
   <url>
     <loc>egolearner.github.io/</loc>
+    <lastmod>2022-08-21T22:06:36+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   
   <url>
     <loc>egolearner.github.io/categories/</loc>
+    <lastmod>2022-08-21T22:06:36+08:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  
+  <url>
+    <loc>egolearner.github.io/tags/database/</loc>
+    <lastmod>2022-08-21T22:06:36+08:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  
+  <url>
+    <loc>egolearner.github.io/tags/polardb/</loc>
+    <lastmod>2022-08-21T22:06:36+08:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  
+  <url>
+    <loc>egolearner.github.io/post/</loc>
+    <lastmod>2022-08-21T22:06:36+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   
   <url>
     <loc>egolearner.github.io/tags/</loc>
+    <lastmod>2022-08-21T22:06:36+08:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  
+  <url>
+    <loc>egolearner.github.io/categories/%E8%AE%BA%E6%96%87%E7%AC%94%E8%AE%B0/</loc>
+    <lastmod>2022-08-21T22:06:36+08:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  
+  <url>
+    <loc>egolearner.github.io/post/polardb-serverless/</loc>
+    <lastmod>2022-08-21T22:06:36+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
