@@ -3,14 +3,56 @@
   
   <url>
     <loc>https://egolearner.github.io/</loc>
-    <lastmod>2022-08-21T22:06:36+08:00</lastmod>
+    <lastmod>2022-10-23T15:44:11+08:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  
+  <url>
+    <loc>https://egolearner.github.io/tags/braft/</loc>
+    <lastmod>2022-10-23T15:44:11+08:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  
+  <url>
+    <loc>https://egolearner.github.io/post/braft-source-read/</loc>
+    <lastmod>2022-10-23T15:44:11+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   
   <url>
     <loc>https://egolearner.github.io/categories/</loc>
-    <lastmod>2022-08-21T22:06:36+08:00</lastmod>
+    <lastmod>2022-10-23T15:44:11+08:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  
+  <url>
+    <loc>https://egolearner.github.io/post/</loc>
+    <lastmod>2022-10-23T15:44:11+08:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  
+  <url>
+    <loc>https://egolearner.github.io/tags/raft/</loc>
+    <lastmod>2022-10-23T15:44:11+08:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  
+  <url>
+    <loc>https://egolearner.github.io/tags/</loc>
+    <lastmod>2022-10-23T15:44:11+08:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  
+  <url>
+    <loc>https://egolearner.github.io/categories/%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90/</loc>
+    <lastmod>2022-10-23T15:44:11+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
@@ -24,20 +66,6 @@
   
   <url>
     <loc>https://egolearner.github.io/tags/polardb/</loc>
-    <lastmod>2022-08-21T22:06:36+08:00</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.5</priority>
-  </url>
-  
-  <url>
-    <loc>https://egolearner.github.io/post/</loc>
-    <lastmod>2022-08-21T22:06:36+08:00</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.5</priority>
-  </url>
-  
-  <url>
-    <loc>https://egolearner.github.io/tags/</loc>
     <lastmod>2022-08-21T22:06:36+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
