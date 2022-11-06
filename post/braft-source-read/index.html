@@ -49,7 +49,7 @@
 <meta itemprop="name" content="braft源码分析">
 <meta itemprop="description" content="brat是百度开源的RAFT实现。 初始化 braft::add_service添加的服务 1 2 3 4 5 6 7 8 9 10 11 12 // 发送文件 if (0 != server-&gt;AddService(file_service(), brpc::SERVER_DOESNT_OWN_SERVICE)) { // raf"><meta itemprop="datePublished" content="2022-10-23T15:44:11+08:00" />
 <meta itemprop="dateModified" content="2022-10-23T15:44:11+08:00" />
-<meta itemprop="wordCount" content="12511">
+<meta itemprop="wordCount" content="12633">
 <meta itemprop="keywords" content="raft,braft," /><meta name="twitter:card" content="summary"/>
 <meta name="twitter:title" content="braft源码分析"/>
 <meta name="twitter:description" content="brat是百度开源的RAFT实现。 初始化 braft::add_service添加的服务 1 2 3 4 5 6 7 8 9 10 11 12 // 发送文件 if (0 != server-&gt;AddService(file_service(), brpc::SERVER_DOESNT_OWN_SERVICE)) { // raf"/>
@@ -1083,7 +1083,8 @@
 <span class="p">}</span>
 </code></pre></td></tr></table>
 </div>
-</div><p>Replicator启动逻辑</p>
+</div><p>根据Raft论文，新leader登基之后需要提交一个no-op日志才能安全的提交之前任期的日志。在braft的实现中， <code>_conf_ctx.flush(_conf.conf, _conf.old_conf)</code> 会发起一次节点更新，在节点更新的日志成功提交后回调用户状态机的 <code>on_leader_start</code> 。braft使用节点更新日志替代了论文中的no-op日志。</p>
+<p>Replicator启动逻辑</p>
 <div class="highlight"><div class="chroma">
 <table class="lntable"><tr><td class="lntd">
 <pre tabindex="0" class="chroma"><code><span class="lnt"> 1
