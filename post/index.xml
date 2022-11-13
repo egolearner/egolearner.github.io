@@ -6,7 +6,16 @@
     <description>Recent content in Posts on A lifelong learner.</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-cn</language>
-    <lastBuildDate>Sun, 23 Oct 2022 15:44:11 +0800</lastBuildDate><atom:link href="https://egolearner.github.io/post/index.xml" rel="self" type="application/rss+xml" />
+    <lastBuildDate>Sun, 13 Nov 2022 08:47:05 +0800</lastBuildDate><atom:link href="https://egolearner.github.io/post/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>论文笔记：DiskANN: Fast Accurate Billion-point Nearest Neighbor Search on a Single Node</title>
+      <link>https://egolearner.github.io/post/diskann/</link>
+      <pubDate>Sun, 13 Nov 2022 08:47:05 +0800</pubDate>
+      
+      <guid>https://egolearner.github.io/post/diskann/</guid>
+      <description>Authors: Devvrit, Suhas Jayaram Subramanya Created: October 4, 2022 9:45 PM PublishedAt: NIPS URL: https://suhasjs.github.io/files/diskann_neurips19.pdf Year: 2019 Summary DiskANN使用64G RAM来索引和服务100维左右的10亿数据集，95%以上的1-recall@1的</description>
+    </item>
+    
     <item>
       <title>braft源码分析</title>
       <link>https://egolearner.github.io/post/braft-source-read/</link>
