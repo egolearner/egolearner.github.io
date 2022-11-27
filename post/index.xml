@@ -6,7 +6,16 @@
     <description>Recent content in Posts on A lifelong learner.</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-cn</language>
-    <lastBuildDate>Sun, 13 Nov 2022 08:47:05 +0800</lastBuildDate><atom:link href="https://egolearner.github.io/post/index.xml" rel="self" type="application/rss+xml" />
+    <lastBuildDate>Sun, 27 Nov 2022 21:21:11 +0800</lastBuildDate><atom:link href="https://egolearner.github.io/post/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>论文笔记：PacificA: Replication in Log-Based Distributed Storage Systems</title>
+      <link>https://egolearner.github.io/post/pacifica/</link>
+      <pubDate>Sun, 27 Nov 2022 21:21:11 +0800</pubDate>
+      
+      <guid>https://egolearner.github.io/post/pacifica/</guid>
+      <description>Authors: Mao Yang, Wei Lin Created: November 26, 2022 8:29 PM PublishedAt: MSR-TR-2008-25 Tags: distributed-system URL: https://www.microsoft.com/en-us/research/wp-content/uploads/2008/02/tr-2008-25.pdf Year: 2008 Summary 论文提出了一种基于日志的分布式存储系统实现方式，将复制组的成员管理和数据复制解耦开来，前者使用配置管</description>
+    </item>
+    
     <item>
       <title>论文笔记：DiskANN: Fast Accurate Billion-point Nearest Neighbor Search on a Single Node</title>
       <link>https://egolearner.github.io/post/diskann/</link>

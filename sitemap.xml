@@ -3,41 +3,55 @@
   
   <url>
     <loc>https://egolearner.github.io/</loc>
-    <lastmod>2022-11-13T08:47:05+08:00</lastmod>
+    <lastmod>2022-11-27T21:21:11+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   
   <url>
     <loc>https://egolearner.github.io/categories/</loc>
-    <lastmod>2022-11-13T08:47:05+08:00</lastmod>
+    <lastmod>2022-11-27T21:21:11+08:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  
+  <url>
+    <loc>https://egolearner.github.io/tags/distributed-system/</loc>
+    <lastmod>2022-11-27T21:21:11+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   
   <url>
     <loc>https://egolearner.github.io/post/</loc>
-    <lastmod>2022-11-13T08:47:05+08:00</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.5</priority>
-  </url>
-  
-  <url>
-    <loc>https://egolearner.github.io/tags/similary-search/</loc>
-    <lastmod>2022-11-13T08:47:05+08:00</lastmod>
+    <lastmod>2022-11-27T21:21:11+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   
   <url>
     <loc>https://egolearner.github.io/tags/</loc>
-    <lastmod>2022-11-13T08:47:05+08:00</lastmod>
+    <lastmod>2022-11-27T21:21:11+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   
   <url>
     <loc>https://egolearner.github.io/categories/%E8%AE%BA%E6%96%87%E7%AC%94%E8%AE%B0/</loc>
+    <lastmod>2022-11-27T21:21:11+08:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  
+  <url>
+    <loc>https://egolearner.github.io/post/pacifica/</loc>
+    <lastmod>2022-11-27T21:21:11+08:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  
+  <url>
+    <loc>https://egolearner.github.io/tags/similary-search/</loc>
     <lastmod>2022-11-13T08:47:05+08:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>

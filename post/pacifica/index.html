@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <title>论文笔记：PacificA: Replication in Log-Based Distributed Storage Systems - A lifelong learner.</title>
+  <meta name="renderer" content="webkit" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+<meta name="theme-color" content="#f8f5ec" />
+<meta name="msapplication-navbutton-color" content="#f8f5ec">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="#f8f5ec">
+
+
+<meta name="author" content="egolearner" /><meta name="description" content="Authors: Mao Yang, Wei Lin Created: November 26, 2022 8:29 PM PublishedAt: MSR-TR-2008-25 Tags: distributed-system URL: https://www.microsoft.com/en-us/research/wp-content/uploads/2008/02/tr-2008-25.pdf Year: 2008 Summary 论文提出了一种基于日志的分布式存储系统实现方式，将复制组的成员管理和数据复制解耦开来，前者使用配置管" />
+
+
+
+
+
+
+<meta name="generator" content="Hugo 0.87.0 with theme even" />
+
+
+<link rel="canonical" href="https://egolearner.github.io/post/pacifica/" />
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+<link rel="manifest" href="/manifest.json">
+<link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5">
+
+
+
+<link href="/sass/main.min.f92fd13721ddf72129410fd8250e73152cc6f2438082b6c0208dc24ee7c13fc4.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.css" integrity="sha256-7TyXnr2YU040zfSP+rEcz29ggW4j56/ujTPwjMzyqFY=" crossorigin="anonymous">
+
+
+<meta property="og:title" content="论文笔记：PacificA: Replication in Log-Based Distributed Storage Systems" />
+<meta property="og:description" content="Authors: Mao Yang, Wei Lin Created: November 26, 2022 8:29 PM PublishedAt: MSR-TR-2008-25 Tags: distributed-system URL: https://www.microsoft.com/en-us/research/wp-content/uploads/2008/02/tr-2008-25.pdf Year: 2008 Summary 论文提出了一种基于日志的分布式存储系统实现方式，将复制组的成员管理和数据复制解耦开来，前者使用配置管" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://egolearner.github.io/post/pacifica/" /><meta property="article:section" content="post" />
+<meta property="article:published_time" content="2022-11-27T21:21:11+08:00" />
+<meta property="article:modified_time" content="2022-11-27T21:21:11+08:00" />
+
+<meta itemprop="name" content="论文笔记：PacificA: Replication in Log-Based Distributed Storage Systems">
+<meta itemprop="description" content="Authors: Mao Yang, Wei Lin Created: November 26, 2022 8:29 PM PublishedAt: MSR-TR-2008-25 Tags: distributed-system URL: https://www.microsoft.com/en-us/research/wp-content/uploads/2008/02/tr-2008-25.pdf Year: 2008 Summary 论文提出了一种基于日志的分布式存储系统实现方式，将复制组的成员管理和数据复制解耦开来，前者使用配置管"><meta itemprop="datePublished" content="2022-11-27T21:21:11+08:00" />
+<meta itemprop="dateModified" content="2022-11-27T21:21:11+08:00" />
+<meta itemprop="wordCount" content="2446">
+<meta itemprop="keywords" content="distributed-system," /><meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="论文笔记：PacificA: Replication in Log-Based Distributed Storage Systems"/>
+<meta name="twitter:description" content="Authors: Mao Yang, Wei Lin Created: November 26, 2022 8:29 PM PublishedAt: MSR-TR-2008-25 Tags: distributed-system URL: https://www.microsoft.com/en-us/research/wp-content/uploads/2008/02/tr-2008-25.pdf Year: 2008 Summary 论文提出了一种基于日志的分布式存储系统实现方式，将复制组的成员管理和数据复制解耦开来，前者使用配置管"/>
+
+<!--[if lte IE 9]>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js"></script>
+<![endif]-->
+
+<!--[if lt IE 9]>
+  <script src="https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js"></script>
+<![endif]-->
+
+</head>
+<body>
+  <div id="mobile-navbar" class="mobile-navbar">
+  <div class="mobile-header-logo">
+    <a href="/" class="logo">A lifelong learner</a>
+  </div>
+  <div class="mobile-navbar-icon">
+    <span></span>
+    <span></span>
+    <span></span>
+  </div>
+</div>
+<nav id="mobile-menu" class="mobile-menu slideout-menu">
+  <ul class="mobile-menu-list">
+    <a href="/">
+        <li class="mobile-menu-item">Home</li>
+      </a><a href="/post/">
+        <li class="mobile-menu-item">Archives</li>
+      </a><a href="/tags/">
+        <li class="mobile-menu-item">Tags</li>
+      </a><a href="/categories/">
+        <li class="mobile-menu-item">Categories</li>
+      </a>
+  </ul>
+
+  
+
+
+</nav>
+
+  <div class="container" id="mobile-panel">
+    <header id="header" class="header">
+        <div class="logo-wrapper">
+  <a href="/" class="logo">A lifelong learner</a>
+</div>
+
+
+
+
+
+<nav class="site-navbar">
+  <ul id="menu" class="menu">
+    <li class="menu-item">
+        <a class="menu-item-link" href="/">Home</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/post/">Archives</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/tags/">Tags</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/categories/">Categories</a>
+      </li>
+  </ul>
+</nav>
+
+    </header>
+
+    <main id="main" class="main">
+      <div class="content-wrapper">
+        <div id="content" class="content">
+          <article class="post">
+    
+    <header class="post-header">
+      <h1 class="post-title">论文笔记：PacificA: Replication in Log-Based Distributed Storage Systems</h1>
+
+      <div class="post-meta">
+        <span class="post-time"> 2022-11-27 </span>
+        <div class="post-category">
+            <a href="/categories/%E8%AE%BA%E6%96%87%E7%AC%94%E8%AE%B0/"> 论文笔记 </a>
+            </div>
+        
+      </div>
+    </header>
+
+    <div class="post-toc" id="post-toc">
+  <h2 class="post-toc-title">文章目录</h2>
+  <div class="post-toc-content always-active">
+    <nav id="TableOfContents">
+  <ul>
+    <li><a href="#summary"><strong>Summary</strong></a>
+      <ul>
+        <li><a href="#strength"><strong>Strength</strong></a></li>
+        <li><a href="#weakness"><strong>Weakness</strong></a></li>
+        <li><a href="#我的思考">我的思考</a></li>
+      </ul>
+    </li>
+    <li><a href="#2-pacifica-replication-framework">2. PACIFICA REPLICATION FRAMEWORK</a>
+      <ul>
+        <li><a href="#21-primarybackup-data-replication">2.1 Primary/Backup Data Replication</a></li>
+        <li><a href="#22-configuration-management">2.2 Configuration Management</a></li>
+        <li><a href="#23-leases-and-failure-detection">2.3 Leases and Failure Detection</a></li>
+        <li><a href="#24-reconfiguration-reconciliation-and-recovery">2.4 Reconfiguration, Reconciliation, and Recovery</a></li>
+        <li><a href="#25-correctness">2.5 Correctness</a></li>
+        <li><a href="#26-implementations">2.6 Implementations</a></li>
+        <li><a href="#27-discussions">2.7 Discussions</a></li>
+      </ul>
+    </li>
+    <li><a href="#3-replication-for-distributed-log-based-storage-systems">3 REPLICATION FOR DISTRIBUTED LOG-BASED STORAGE SYSTEMS</a>
+      <ul>
+        <li><a href="#31-logical-replication">3.1 Logical Replication</a></li>
+        <li><a href="#32-layered-replication">3.2 Layered Replication</a></li>
+        <li><a href="#33-log-merging">3.3 Log Merging</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+  </div>
+</div>
+    <div class="post-content">
+      <ul>
+<li>Authors: Mao Yang, Wei Lin</li>
+<li>Created: November 26, 2022 8:29 PM</li>
+<li>PublishedAt: MSR-TR-2008-25</li>
+<li>Tags: distributed-system</li>
+<li>URL: <a href="https://www.microsoft.com/en-us/research/wp-content/uploads/2008/02/tr-2008-25.pdf">https://www.microsoft.com/en-us/research/wp-content/uploads/2008/02/tr-2008-25.pdf</a></li>
+<li>Year: 2008</li>
+</ul>
+<h1 id="summary"><strong>Summary</strong></h1>
+<p>论文提出了一种基于日志的分布式存储系统实现方式，将复制组的成员管理和数据复制解耦开来，前者使用配置管理器（如Paxos）来管理，后者使用primary/backup机制：主节点接收到客户端的写请求后，将其复制到所有的从节点后再向客户端发送响应；在强一致性模式下只有主节点会处理读请求；数据管理节点最多可以容忍n-1个节点失败。</p>
+<h2 id="strength"><strong>Strength</strong></h2>
+<ul>
+<li>容易理解和论证正确性，工程上容易实现。</li>
+<li>最多可以容忍n-1个节点失败。</li>
+</ul>
+<h2 id="weakness"><strong>Weakness</strong></h2>
+<ul>
+<li>节点抖动时容易出现写请求停滞，依赖于合理的配置租约过期时间。</li>
+</ul>
+<h2 id="我的思考">我的思考</h2>
+<p>论文提出的模式在工程上容易实现，ES就采用了PacificA的模式。这篇论文发表时Raft还没有发表，应该也没有可用的Paxos库，因此这个模式是有意义的，使用已有的Paxos服务来做成员管理，然后自己实现数据复制。在有很多Raft和Paxos库的今天，基于这些库来实现日志复制成为更简单可行的方案。</p>
+<h1 id="2-pacifica-replication-framework">2. PACIFICA REPLICATION FRAMEWORK</h1>
+<p>适用网络环境：局域网。</p>
+<p>错误模型：fail-stop。论文不要求server间的消息时延有上限。不要求时钟是同步的或者松散同步的，但要求时钟飘移有上限。</p>
+<h2 id="21-primarybackup-data-replication">2.1 Primary/Backup Data Replication</h2>
+<p>一个复制组的主节点负责处理写请求和读请求，并将写请求同步到secondaries节点上去。主节点为update请求确定单调递增的序列号，从节点也按照这个顺序处理请求，因此可以保证从节点的数据和主节点一致。</p>
+<p>每个副本维护prepared list和committed point，committed point之前为committed list。</p>
+<ul>
+<li>读请求处理。主节点使用使用当前的committed list表示的状态来处理请求并返回结果。</li>
+<li>写请求处理。
+<ul>
+<li>主节点分配请求的序列号，将请求、序列号及当前的配置版本作为prepare消息发送到所有从节点。</li>
+<li>从节点将接收到的请求以序列号的顺序插入prepared list，然后发送响应给主节点。</li>
+<li>主节点接收到所有从节点的ack后请求变为comitted，向客户端发送响应。</li>
+<li>每次prepare消息还带上committed point的序列号，以便从节点移动committed point。</li>
+</ul>
+</li>
+</ul>
+<p><img src="/static/PacificA%20Replication%20in%20Log-Based%20Distributed%20Stor%206514f49fc42c4b8a91f2da1663a6af6a/Untitled.png" alt="Untitled"></p>
+<h2 id="22-configuration-management">2.2 Configuration Management</h2>
+<p>使用配置管理器（如Paxos）维护节点信息。在节点疑似失效或者新节点加入时，主节点会提交新配置。只有版本匹配时才允许提交。</p>
+<p>在出现网络分区时，可能有冲突的重新配置请求：主节点想要移除某些从节点，而某些从节点想要移除主节点。因为这些请求都是基于当前的配置，因此第一个被Paxos接受的请求获得胜利，其他冲突的请求因为版本不匹配而被拒绝。</p>
+<p><img src="/static/PacificA%20Replication%20in%20Log-Based%20Distributed%20Stor%206514f49fc42c4b8a91f2da1663a6af6a/Untitled%201.png" alt="Untitled"></p>
+<h2 id="23-leases-and-failure-detection">2.3 Leases and Failure Detection</h2>
+<p>使用租约来防止脑裂问题。</p>
+<p>主节点从每个节点取得租约，然后定期发送beacon来维护租约。如果超过一定时间没有收到从节点对beacon的响应，则租约过期。如果任一租约过期，主节点不再认为自己是主节点，停止处理读写请求，先从Paxos中移除失效的从节点。</p>
+<p>只要发送beacon的节点是当前配置的主节点，从节点就回复ack。超过grace period后没收到主节点的beacon，从节点认为租约过期，联系Paxos移除当前的主节点并成为新的主节点。</p>
+<p>假设没有时钟飘移，只要grace period大于等于租约时间，就可以保证租约在主节点上过期先于在从节点上过期。</p>
+<p>有请求时，beacon和ack和附带发送。没有请求时，才需要专门发送beacon和ack。</p>
+<h2 id="24-reconfiguration-reconciliation-and-recovery">2.4 Reconfiguration, Reconciliation, and Recovery</h2>
+<p>新的主节点即位后开始reconciliation。新主将自己的prepared list发送到所有从节点，从节点需要截断新主的committed point之后的请求。</p>
+<p>发生主节点切换时，已提交的序列号会被保持，而未提交的序列号则不一定保持。</p>
+<p>新的节点加入时，为避免阻塞请求处理，先作为候选从节点加入，追上后通知主节点将其作为从节点加入配置中。</p>
+<p>在节点先被移除配置后又重新加回配置的场景中，可以先从prepared list中截断不一致的请求，然后同步增量请求。</p>
+<h2 id="25-correctness">2.5 Correctness</h2>
+<blockquote>
+<p>Linearizability: The system execution is equivalent to a linearized execution of all processed requests. <br />
+Durability: If a client receives an acknowledgment from the system for an update, the update has been included in the equivalent linearized execution. <br />
+Progress: Assuming that communication links between non-faulty servers are reliable, that the configuration manager eventually responds to reconfiguration requests, and that eventually there are no failures and no reconfigurations in the system, the system will return a response to each client request. <br /></p>
+</blockquote>
+<h2 id="26-implementations">2.6 Implementations</h2>
+<p>如果支持append-only的应用状态的话，可以直接用作prepared list。</p>
+<h2 id="27-discussions">2.7 Discussions</h2>
+<p>最多允许n-1个节点失败。</p>
+<p>为了应对整个复制组的短暂失败，所有副本的prepared list和committed point需要维护在持久化存储上。</p>
+<p>和Paxos的对比</p>
+<ol>
+<li>Paxos对少数慢节点不敏感，而会导致primary/backup协议停滞，直到重新配置请求将其从复制组中移除。租约时间也需要合理配置，如果过大在节点失败时会有比较长的停滞时间，如果过小会导致假阳性。</li>
+<li>PacificA容忍更多的节点失败。</li>
+<li>PacificA的重新配置借助配置管理器可以很容易的实现。</li>
+</ol>
+<p>弱化一致性要求：租约过期的主节点或者从节点也允许处理query请求。</p>
+<h1 id="3-replication-for-distributed-log-based-storage-systems">3 REPLICATION FOR DISTRIBUTED LOG-BASED STORAGE SYSTEMS</h1>
+<p><img src="/static/PacificA%20Replication%20in%20Log-Based%20Distributed%20Stor%206514f49fc42c4b8a91f2da1663a6af6a/Untitled%202.png" alt="Untitled"></p>
+<p>上图为单机架构。</p>
+<h2 id="31-logical-replication">3.1 Logical Replication</h2>
+<p>在应用日志基础上加上3个字段：配置版本、序列号、上个提交的序列号，即可以使用一个日志同时作为应用日志和prepared request存储。对于相同序列号的日志，高配置版本会覆盖低版本的日志。</p>
+<p>在第一个阶段，接收到prepare消息时，副本追加到日志中。在第二个阶段，请求提交时，被应用到内存中的数据结构中。</p>
+<p>在checkpoint后，可以截断已应用和已checkpoint的日志。</p>
+<p>logical-V是logical replication的变体，只有主节点维护内存状态，从节点只需要追加日志，而不需要应用到内存状态。主节点生成快照的时候，从节点也需要fetch快照，截断已被丢弃或者快照的日志。优势是从节点消耗更少的内存和CPU，缺点是更高的网络带宽消耗，主节点切换也需要花费更多的时间来重建内存状态。</p>
+<h2 id="32-layered-replication">3.2 Layered Replication</h2>
+<p>基于log的存储系统由两层构成：底层提供持久化文件存储，上层将应用逻辑变为文件操作。</p>
+<h2 id="33-log-merging">3.3 Log Merging</h2>
+<p>一个机器上有多个复制组时，需要合并日志以避免导致磁盘随机seek。</p>
+
+    </div>
+
+    <div class="post-copyright">
+  <p class="copyright-item">
+    <span class="item-title">文章作者</span>
+    <span class="item-content">egolearner</span>
+  </p>
+  <p class="copyright-item">
+    <span class="item-title">上次更新</span>
+    <span class="item-content">
+        2022-11-27
+        
+    </span>
+  </p>
+  
+  
+</div>
+<footer class="post-footer">
+      <div class="post-tags">
+          <a href="/tags/distributed-system/">distributed-system</a>
+          </div>
+      <nav class="post-nav">
+        
+        <a class="next" href="/post/diskann/">
+            <span class="next-text nav-default">论文笔记：DiskANN: Fast Accurate Billion-point Nearest Neighbor Search on a Single Node</span>
+            <span class="next-text nav-mobile">下一篇</span>
+            <i class="iconfont icon-right"></i>
+          </a>
+      </nav>
+    </footer>
+  </article>
+        </div>
+        
+
+  
+
+  
+
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="social-links">
+  <a href="https://egolearner.github.io/index.xml" type="application/rss+xml" class="iconfont icon-rss" title="rss"></a>
+</div>
+
+<div class="copyright">
+  <span class="power-by">
+    由 <a class="hexo-link" href="https://gohugo.io">Hugo</a> 强力驱动
+  </span>
+  <span class="division">|</span>
+  <span class="theme-info">
+    主题 - 
+    <a class="theme-link" href="https://github.com/olOwOlo/hugo-theme-even">Even</a>
+  </span>
+
+  
+
+  <span class="copyright-year">
+    &copy; 
+    2022<span class="heart"><i class="iconfont icon-heart"></i></span><span>egolearner</span>
+  </span>
+</div>
+
+    </footer>
+
+    <div class="back-to-top" id="back-to-top">
+      <i class="iconfont icon-up"></i>
+    </div>
+  </div>
+  
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.2.1/dist/jquery.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/slideout@1.0.1/dist/slideout.min.js" integrity="sha256-t+zJ/g8/KXIJMjSVQdnibt4dlaDxc9zXr/9oNPeWqdg=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.js" integrity="sha256-XVLffZaxoWfGUEbdzuLi7pwaUJv1cecsQJQqGLe7axY=" crossorigin="anonymous"></script>
+
+
+
+<script type="text/javascript" src="/js/main.min.c99b103c33d1539acf3025e1913697534542c4a5aa5af0ccc20475ed2863603b.js"></script>
+
+
+
+
+
+
+
+
+</body>
+</html>
