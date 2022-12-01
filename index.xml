@@ -6,7 +6,16 @@
     <description>Recent content on A lifelong learner.</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-cn</language>
-    <lastBuildDate>Sun, 27 Nov 2022 21:21:11 +0800</lastBuildDate><atom:link href="https://egolearner.github.io/index.xml" rel="self" type="application/rss+xml" />
+    <lastBuildDate>Thu, 01 Dec 2022 19:43:42 +0800</lastBuildDate><atom:link href="https://egolearner.github.io/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>BoltDB源码笔记</title>
+      <link>https://egolearner.github.io/post/boltdb-source-read/</link>
+      <pubDate>Thu, 01 Dec 2022 19:43:42 +0800</pubDate>
+      
+      <guid>https://egolearner.github.io/post/boltdb-source-read/</guid>
+      <description>BoltDB 受LMDB启发，是基于append only B+ tree实现的KV存储。 page实现 boltdb没有实现自己的page buffer管理器，而是直接用</description>
+    </item>
+    
     <item>
       <title>论文笔记：PacificA: Replication in Log-Based Distributed Storage Systems</title>
       <link>https://egolearner.github.io/post/pacifica/</link>
