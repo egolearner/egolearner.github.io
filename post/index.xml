@@ -6,7 +6,16 @@
     <description>Recent content in Posts on A lifelong learner.</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-cn</language>
-    <lastBuildDate>Thu, 01 Dec 2022 19:43:42 +0800</lastBuildDate><atom:link href="https://egolearner.github.io/post/index.xml" rel="self" type="application/rss+xml" />
+    <lastBuildDate>Thu, 08 Dec 2022 08:29:57 +0800</lastBuildDate><atom:link href="https://egolearner.github.io/post/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>simple-sqlite源码笔记</title>
+      <link>https://egolearner.github.io/post/simple-sqlite-source-read/</link>
+      <pubDate>Thu, 08 Dec 2022 08:29:57 +0800</pubDate>
+      
+      <guid>https://egolearner.github.io/post/simple-sqlite-source-read/</guid>
+      <description>https://github.com/madushadhanushka/simple-sqlite 是从sqlite 2.5.0 抽取出的核心逻辑，适合用来学习sqlite的后端实现，如 如何实现page buffer 如何实现基于磁盘的B树 如何通过rollback</description>
+    </item>
+    
     <item>
       <title>BoltDB源码笔记</title>
       <link>https://egolearner.github.io/post/boltdb-source-read/</link>
