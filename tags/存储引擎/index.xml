@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>存储引擎 on A lifelong learner.</title>
+    <link>https://egolearner.github.io/tags/%E5%AD%98%E5%82%A8%E5%BC%95%E6%93%8E/</link>
+    <description>Recent content in 存储引擎 on A lifelong learner.</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-cn</language>
+    <lastBuildDate>Thu, 08 Dec 2022 08:29:57 +0800</lastBuildDate><atom:link href="https://egolearner.github.io/tags/%E5%AD%98%E5%82%A8%E5%BC%95%E6%93%8E/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>simple-sqlite源码笔记</title>
+      <link>https://egolearner.github.io/post/simple-sqlite-source-read/</link>
+      <pubDate>Thu, 08 Dec 2022 08:29:57 +0800</pubDate>
+      
+      <guid>https://egolearner.github.io/post/simple-sqlite-source-read/</guid>
+      <description>https://github.com/madushadhanushka/simple-sqlite 是从sqlite 2.5.0 抽取出的核心逻辑，适合用来学习sqlite的后端实现，如 如何实现page buffer 如何实现基于磁盘的B树 如何通过rollback</description>
+    </item>
+    
+    <item>
+      <title>BoltDB源码笔记</title>
+      <link>https://egolearner.github.io/post/boltdb-source-read/</link>
+      <pubDate>Thu, 01 Dec 2022 19:43:42 +0800</pubDate>
+      
+      <guid>https://egolearner.github.io/post/boltdb-source-read/</guid>
+      <description>BoltDB 受LMDB启发，是基于append only B+ tree实现的KV存储。 page实现 boltdb没有实现自己的page buffer管理器，而是直接用</description>
+    </item>
+    
+  </channel>
+</rss>
