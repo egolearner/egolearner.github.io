@@ -6,7 +6,16 @@
     <description>Recent content on A lifelong learner.</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-cn</language>
-    <lastBuildDate>Thu, 08 Dec 2022 08:29:57 +0800</lastBuildDate><atom:link href="https://egolearner.github.io/index.xml" rel="self" type="application/rss+xml" />
+    <lastBuildDate>Sun, 04 Aug 2024 23:44:31 +0800</lastBuildDate><atom:link href="https://egolearner.github.io/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Quotient Filter</title>
+      <link>https://egolearner.github.io/post/quotient-filter/</link>
+      <pubDate>Sun, 04 Aug 2024 23:44:31 +0800</pubDate>
+      
+      <guid>https://egolearner.github.io/post/quotient-filter/</guid>
+      <description>quotient filter(QF)不存储原始的key，而是存储原始key的指纹，因此在指纹冲突时，无法区分key是否真的存在，此时也会false posi</description>
+    </item>
+    
     <item>
       <title>simple-sqlite源码笔记</title>
       <link>https://egolearner.github.io/post/simple-sqlite-source-read/</link>
