@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
-<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
   <channel>
-    <title>distributed-system on A lifelong learner.</title>
+    <title>Distributed-System on A lifelong learner.</title>
     <link>https://egolearner.github.io/tags/distributed-system/</link>
-    <description>Recent content in distributed-system on A lifelong learner.</description>
+    <description>Recent content in Distributed-System on A lifelong learner.</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-cn</language>
     <lastBuildDate>Sun, 27 Nov 2022 21:21:11 +0800</lastBuildDate><atom:link href="https://egolearner.github.io/tags/distributed-system/index.xml" rel="self" type="application/rss+xml" />
@@ -13,7 +13,101 @@
       <pubDate>Sun, 27 Nov 2022 21:21:11 +0800</pubDate>
       
       <guid>https://egolearner.github.io/post/pacifica/</guid>
-      <description>Authors: Mao Yang, Wei Lin Created: November 26, 2022 8:29 PM PublishedAt: MSR-TR-2008-25 Tags: distributed-system URL: https://www.microsoft.com/en-us/research/wp-content/uploads/2008/02/tr-2008-25.pdf Year: 2008 Summary 论文提出了一种基于日志的分布式存储系统实现方式，将复制组的成员管理和数据复制解耦开来，前者使用配置管</description>
+      <description>&lt;ul&gt;
+&lt;li&gt;Authors: Mao Yang, Wei Lin&lt;/li&gt;
+&lt;li&gt;Created: November 26, 2022 8:29 PM&lt;/li&gt;
+&lt;li&gt;PublishedAt: MSR-TR-2008-25&lt;/li&gt;
+&lt;li&gt;Tags: distributed-system&lt;/li&gt;
+&lt;li&gt;URL: &lt;a href=&#34;https://www.microsoft.com/en-us/research/wp-content/uploads/2008/02/tr-2008-25.pdf&#34;&gt;https://www.microsoft.com/en-us/research/wp-content/uploads/2008/02/tr-2008-25.pdf&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;Year: 2008&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h1 id=&#34;summary&#34;&gt;&lt;strong&gt;Summary&lt;/strong&gt;&lt;/h1&gt;
+&lt;p&gt;论文提出了一种基于日志的分布式存储系统实现方式，将复制组的成员管理和数据复制解耦开来，前者使用配置管理器（如Paxos）来管理，后者使用primary/backup机制：主节点接收到客户端的写请求后，将其复制到所有的从节点后再向客户端发送响应；在强一致性模式下只有主节点会处理读请求；数据管理节点最多可以容忍n-1个节点失败。&lt;/p&gt;</description>
+      <content:encoded><![CDATA[<ul>
+<li>Authors: Mao Yang, Wei Lin</li>
+<li>Created: November 26, 2022 8:29 PM</li>
+<li>PublishedAt: MSR-TR-2008-25</li>
+<li>Tags: distributed-system</li>
+<li>URL: <a href="https://www.microsoft.com/en-us/research/wp-content/uploads/2008/02/tr-2008-25.pdf">https://www.microsoft.com/en-us/research/wp-content/uploads/2008/02/tr-2008-25.pdf</a></li>
+<li>Year: 2008</li>
+</ul>
+<h1 id="summary"><strong>Summary</strong></h1>
+<p>论文提出了一种基于日志的分布式存储系统实现方式，将复制组的成员管理和数据复制解耦开来，前者使用配置管理器（如Paxos）来管理，后者使用primary/backup机制：主节点接收到客户端的写请求后，将其复制到所有的从节点后再向客户端发送响应；在强一致性模式下只有主节点会处理读请求；数据管理节点最多可以容忍n-1个节点失败。</p>
+<h2 id="strength"><strong>Strength</strong></h2>
+<ul>
+<li>容易理解和论证正确性，工程上容易实现。</li>
+<li>最多可以容忍n-1个节点失败。</li>
+</ul>
+<h2 id="weakness"><strong>Weakness</strong></h2>
+<ul>
+<li>节点抖动时容易出现写请求停滞，依赖于合理的配置租约过期时间。</li>
+</ul>
+<h2 id="我的思考">我的思考</h2>
+<p>论文提出的模式在工程上容易实现，ES就采用了PacificA的模式。这篇论文发表时Raft还没有发表，应该也没有可用的Paxos库，因此这个模式是有意义的，使用已有的Paxos服务来做成员管理，然后自己实现数据复制。在有很多Raft和Paxos库的今天，基于这些库来实现日志复制成为更简单可行的方案。</p>
+<h1 id="2-pacifica-replication-framework">2. PACIFICA REPLICATION FRAMEWORK</h1>
+<p>适用网络环境：局域网。</p>
+<p>错误模型：fail-stop。论文不要求server间的消息时延有上限。不要求时钟是同步的或者松散同步的，但要求时钟飘移有上限。</p>
+<h2 id="21-primarybackup-data-replication">2.1 Primary/Backup Data Replication</h2>
+<p>一个复制组的主节点负责处理写请求和读请求，并将写请求同步到secondaries节点上去。主节点为update请求确定单调递增的序列号，从节点也按照这个顺序处理请求，因此可以保证从节点的数据和主节点一致。</p>
+<p>每个副本维护prepared list和committed point，committed point之前为committed list。</p>
+<ul>
+<li>读请求处理。主节点使用使用当前的committed list表示的状态来处理请求并返回结果。</li>
+<li>写请求处理。
+<ul>
+<li>主节点分配请求的序列号，将请求、序列号及当前的配置版本作为prepare消息发送到所有从节点。</li>
+<li>从节点将接收到的请求以序列号的顺序插入prepared list，然后发送响应给主节点。</li>
+<li>主节点接收到所有从节点的ack后请求变为comitted，向客户端发送响应。</li>
+<li>每次prepare消息还带上committed point的序列号，以便从节点移动committed point。</li>
+</ul>
+</li>
+</ul>
+<img src="/static/PacificA%20Replication%20in%20Log-Based%20Distributed%20Stor%206514f49fc42c4b8a91f2da1663a6af6a/Untitled.png">
+<h2 id="22-configuration-management">2.2 Configuration Management</h2>
+<p>使用配置管理器（如Paxos）维护节点信息。在节点疑似失效或者新节点加入时，主节点会提交新配置。只有版本匹配时才允许提交。</p>
+<p>在出现网络分区时，可能有冲突的重新配置请求：主节点想要移除某些从节点，而某些从节点想要移除主节点。因为这些请求都是基于当前的配置，因此第一个被Paxos接受的请求获得胜利，其他冲突的请求因为版本不匹配而被拒绝。</p>
+<img src="/static/PacificA%20Replication%20in%20Log-Based%20Distributed%20Stor%206514f49fc42c4b8a91f2da1663a6af6a/Untitled%201.png">
+<h2 id="23-leases-and-failure-detection">2.3 Leases and Failure Detection</h2>
+<p>使用租约来防止脑裂问题。</p>
+<p>主节点从每个节点取得租约，然后定期发送beacon来维护租约。如果超过一定时间没有收到从节点对beacon的响应，则租约过期。如果任一租约过期，主节点不再认为自己是主节点，停止处理读写请求，先从Paxos中移除失效的从节点。</p>
+<p>只要发送beacon的节点是当前配置的主节点，从节点就回复ack。超过grace period后没收到主节点的beacon，从节点认为租约过期，联系Paxos移除当前的主节点并成为新的主节点。</p>
+<p>假设没有时钟飘移，只要grace period大于等于租约时间，就可以保证租约在主节点上过期先于在从节点上过期。</p>
+<p>有请求时，beacon和ack和附带发送。没有请求时，才需要专门发送beacon和ack。</p>
+<h2 id="24-reconfiguration-reconciliation-and-recovery">2.4 Reconfiguration, Reconciliation, and Recovery</h2>
+<p>新的主节点即位后开始reconciliation。新主将自己的prepared list发送到所有从节点，从节点需要截断新主的committed point之后的请求。</p>
+<p>发生主节点切换时，已提交的序列号会被保持，而未提交的序列号则不一定保持。</p>
+<p>新的节点加入时，为避免阻塞请求处理，先作为候选从节点加入，追上后通知主节点将其作为从节点加入配置中。</p>
+<p>在节点先被移除配置后又重新加回配置的场景中，可以先从prepared list中截断不一致的请求，然后同步增量请求。</p>
+<h2 id="25-correctness">2.5 Correctness</h2>
+<blockquote>
+<p>Linearizability: The system execution is equivalent to a linearized execution of all processed requests. <br />
+Durability: If a client receives an acknowledgment from the system for an update, the update has been included in the equivalent linearized execution. <br />
+Progress: Assuming that communication links between non-faulty servers are reliable, that the configuration manager eventually responds to reconfiguration requests, and that eventually there are no failures and no reconfigurations in the system, the system will return a response to each client request. <br /></p>
+</blockquote>
+<h2 id="26-implementations">2.6 Implementations</h2>
+<p>如果支持append-only的应用状态的话，可以直接用作prepared list。</p>
+<h2 id="27-discussions">2.7 Discussions</h2>
+<p>最多允许n-1个节点失败。</p>
+<p>为了应对整个复制组的短暂失败，所有副本的prepared list和committed point需要维护在持久化存储上。</p>
+<p>和Paxos的对比</p>
+<ol>
+<li>Paxos对少数慢节点不敏感，而会导致primary/backup协议停滞，直到重新配置请求将其从复制组中移除。租约时间也需要合理配置，如果过大在节点失败时会有比较长的停滞时间，如果过小会导致假阳性。</li>
+<li>PacificA容忍更多的节点失败。</li>
+<li>PacificA的重新配置借助配置管理器可以很容易的实现。</li>
+</ol>
+<p>弱化一致性要求：租约过期的主节点或者从节点也允许处理query请求。</p>
+<h1 id="3-replication-for-distributed-log-based-storage-systems">3 REPLICATION FOR DISTRIBUTED LOG-BASED STORAGE SYSTEMS</h1>
+<img src="/static/PacificA%20Replication%20in%20Log-Based%20Distributed%20Stor%206514f49fc42c4b8a91f2da1663a6af6a/Untitled%202.png">
+<p>上图为单机架构。</p>
+<h2 id="31-logical-replication">3.1 Logical Replication</h2>
+<p>在应用日志基础上加上3个字段：配置版本、序列号、上个提交的序列号，即可以使用一个日志同时作为应用日志和prepared request存储。对于相同序列号的日志，高配置版本会覆盖低版本的日志。</p>
+<p>在第一个阶段，接收到prepare消息时，副本追加到日志中。在第二个阶段，请求提交时，被应用到内存中的数据结构中。</p>
+<p>在checkpoint后，可以截断已应用和已checkpoint的日志。</p>
+<p>logical-V是logical replication的变体，只有主节点维护内存状态，从节点只需要追加日志，而不需要应用到内存状态。主节点生成快照的时候，从节点也需要fetch快照，截断已被丢弃或者快照的日志。优势是从节点消耗更少的内存和CPU，缺点是更高的网络带宽消耗，主节点切换也需要花费更多的时间来重建内存状态。</p>
+<h2 id="32-layered-replication">3.2 Layered Replication</h2>
+<p>基于log的存储系统由两层构成：底层提供持久化文件存储，上层将应用逻辑变为文件操作。</p>
+<h2 id="33-log-merging">3.3 Log Merging</h2>
+<p>一个机器上有多个复制组时，需要合并日志以避免导致磁盘随机seek。</p>
+]]></content:encoded>
     </item>
     
   </channel>

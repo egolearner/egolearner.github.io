@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
-<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
   <channel>
     <title>论文笔记 on A lifelong learner.</title>
     <link>https://egolearner.github.io/categories/%E8%AE%BA%E6%96%87%E7%AC%94%E8%AE%B0/</link>
@@ -13,7 +13,101 @@
       <pubDate>Sun, 27 Nov 2022 21:21:11 +0800</pubDate>
       
       <guid>https://egolearner.github.io/post/pacifica/</guid>
-      <description>Authors: Mao Yang, Wei Lin Created: November 26, 2022 8:29 PM PublishedAt: MSR-TR-2008-25 Tags: distributed-system URL: https://www.microsoft.com/en-us/research/wp-content/uploads/2008/02/tr-2008-25.pdf Year: 2008 Summary 论文提出了一种基于日志的分布式存储系统实现方式，将复制组的成员管理和数据复制解耦开来，前者使用配置管</description>
+      <description>&lt;ul&gt;
+&lt;li&gt;Authors: Mao Yang, Wei Lin&lt;/li&gt;
+&lt;li&gt;Created: November 26, 2022 8:29 PM&lt;/li&gt;
+&lt;li&gt;PublishedAt: MSR-TR-2008-25&lt;/li&gt;
+&lt;li&gt;Tags: distributed-system&lt;/li&gt;
+&lt;li&gt;URL: &lt;a href=&#34;https://www.microsoft.com/en-us/research/wp-content/uploads/2008/02/tr-2008-25.pdf&#34;&gt;https://www.microsoft.com/en-us/research/wp-content/uploads/2008/02/tr-2008-25.pdf&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;Year: 2008&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h1 id=&#34;summary&#34;&gt;&lt;strong&gt;Summary&lt;/strong&gt;&lt;/h1&gt;
+&lt;p&gt;论文提出了一种基于日志的分布式存储系统实现方式，将复制组的成员管理和数据复制解耦开来，前者使用配置管理器（如Paxos）来管理，后者使用primary/backup机制：主节点接收到客户端的写请求后，将其复制到所有的从节点后再向客户端发送响应；在强一致性模式下只有主节点会处理读请求；数据管理节点最多可以容忍n-1个节点失败。&lt;/p&gt;</description>
+      <content:encoded><![CDATA[<ul>
+<li>Authors: Mao Yang, Wei Lin</li>
+<li>Created: November 26, 2022 8:29 PM</li>
+<li>PublishedAt: MSR-TR-2008-25</li>
+<li>Tags: distributed-system</li>
+<li>URL: <a href="https://www.microsoft.com/en-us/research/wp-content/uploads/2008/02/tr-2008-25.pdf">https://www.microsoft.com/en-us/research/wp-content/uploads/2008/02/tr-2008-25.pdf</a></li>
+<li>Year: 2008</li>
+</ul>
+<h1 id="summary"><strong>Summary</strong></h1>
+<p>论文提出了一种基于日志的分布式存储系统实现方式，将复制组的成员管理和数据复制解耦开来，前者使用配置管理器（如Paxos）来管理，后者使用primary/backup机制：主节点接收到客户端的写请求后，将其复制到所有的从节点后再向客户端发送响应；在强一致性模式下只有主节点会处理读请求；数据管理节点最多可以容忍n-1个节点失败。</p>
+<h2 id="strength"><strong>Strength</strong></h2>
+<ul>
+<li>容易理解和论证正确性，工程上容易实现。</li>
+<li>最多可以容忍n-1个节点失败。</li>
+</ul>
+<h2 id="weakness"><strong>Weakness</strong></h2>
+<ul>
+<li>节点抖动时容易出现写请求停滞，依赖于合理的配置租约过期时间。</li>
+</ul>
+<h2 id="我的思考">我的思考</h2>
+<p>论文提出的模式在工程上容易实现，ES就采用了PacificA的模式。这篇论文发表时Raft还没有发表，应该也没有可用的Paxos库，因此这个模式是有意义的，使用已有的Paxos服务来做成员管理，然后自己实现数据复制。在有很多Raft和Paxos库的今天，基于这些库来实现日志复制成为更简单可行的方案。</p>
+<h1 id="2-pacifica-replication-framework">2. PACIFICA REPLICATION FRAMEWORK</h1>
+<p>适用网络环境：局域网。</p>
+<p>错误模型：fail-stop。论文不要求server间的消息时延有上限。不要求时钟是同步的或者松散同步的，但要求时钟飘移有上限。</p>
+<h2 id="21-primarybackup-data-replication">2.1 Primary/Backup Data Replication</h2>
+<p>一个复制组的主节点负责处理写请求和读请求，并将写请求同步到secondaries节点上去。主节点为update请求确定单调递增的序列号，从节点也按照这个顺序处理请求，因此可以保证从节点的数据和主节点一致。</p>
+<p>每个副本维护prepared list和committed point，committed point之前为committed list。</p>
+<ul>
+<li>读请求处理。主节点使用使用当前的committed list表示的状态来处理请求并返回结果。</li>
+<li>写请求处理。
+<ul>
+<li>主节点分配请求的序列号，将请求、序列号及当前的配置版本作为prepare消息发送到所有从节点。</li>
+<li>从节点将接收到的请求以序列号的顺序插入prepared list，然后发送响应给主节点。</li>
+<li>主节点接收到所有从节点的ack后请求变为comitted，向客户端发送响应。</li>
+<li>每次prepare消息还带上committed point的序列号，以便从节点移动committed point。</li>
+</ul>
+</li>
+</ul>
+<img src="/static/PacificA%20Replication%20in%20Log-Based%20Distributed%20Stor%206514f49fc42c4b8a91f2da1663a6af6a/Untitled.png">
+<h2 id="22-configuration-management">2.2 Configuration Management</h2>
+<p>使用配置管理器（如Paxos）维护节点信息。在节点疑似失效或者新节点加入时，主节点会提交新配置。只有版本匹配时才允许提交。</p>
+<p>在出现网络分区时，可能有冲突的重新配置请求：主节点想要移除某些从节点，而某些从节点想要移除主节点。因为这些请求都是基于当前的配置，因此第一个被Paxos接受的请求获得胜利，其他冲突的请求因为版本不匹配而被拒绝。</p>
+<img src="/static/PacificA%20Replication%20in%20Log-Based%20Distributed%20Stor%206514f49fc42c4b8a91f2da1663a6af6a/Untitled%201.png">
+<h2 id="23-leases-and-failure-detection">2.3 Leases and Failure Detection</h2>
+<p>使用租约来防止脑裂问题。</p>
+<p>主节点从每个节点取得租约，然后定期发送beacon来维护租约。如果超过一定时间没有收到从节点对beacon的响应，则租约过期。如果任一租约过期，主节点不再认为自己是主节点，停止处理读写请求，先从Paxos中移除失效的从节点。</p>
+<p>只要发送beacon的节点是当前配置的主节点，从节点就回复ack。超过grace period后没收到主节点的beacon，从节点认为租约过期，联系Paxos移除当前的主节点并成为新的主节点。</p>
+<p>假设没有时钟飘移，只要grace period大于等于租约时间，就可以保证租约在主节点上过期先于在从节点上过期。</p>
+<p>有请求时，beacon和ack和附带发送。没有请求时，才需要专门发送beacon和ack。</p>
+<h2 id="24-reconfiguration-reconciliation-and-recovery">2.4 Reconfiguration, Reconciliation, and Recovery</h2>
+<p>新的主节点即位后开始reconciliation。新主将自己的prepared list发送到所有从节点，从节点需要截断新主的committed point之后的请求。</p>
+<p>发生主节点切换时，已提交的序列号会被保持，而未提交的序列号则不一定保持。</p>
+<p>新的节点加入时，为避免阻塞请求处理，先作为候选从节点加入，追上后通知主节点将其作为从节点加入配置中。</p>
+<p>在节点先被移除配置后又重新加回配置的场景中，可以先从prepared list中截断不一致的请求，然后同步增量请求。</p>
+<h2 id="25-correctness">2.5 Correctness</h2>
+<blockquote>
+<p>Linearizability: The system execution is equivalent to a linearized execution of all processed requests. <br />
+Durability: If a client receives an acknowledgment from the system for an update, the update has been included in the equivalent linearized execution. <br />
+Progress: Assuming that communication links between non-faulty servers are reliable, that the configuration manager eventually responds to reconfiguration requests, and that eventually there are no failures and no reconfigurations in the system, the system will return a response to each client request. <br /></p>
+</blockquote>
+<h2 id="26-implementations">2.6 Implementations</h2>
+<p>如果支持append-only的应用状态的话，可以直接用作prepared list。</p>
+<h2 id="27-discussions">2.7 Discussions</h2>
+<p>最多允许n-1个节点失败。</p>
+<p>为了应对整个复制组的短暂失败，所有副本的prepared list和committed point需要维护在持久化存储上。</p>
+<p>和Paxos的对比</p>
+<ol>
+<li>Paxos对少数慢节点不敏感，而会导致primary/backup协议停滞，直到重新配置请求将其从复制组中移除。租约时间也需要合理配置，如果过大在节点失败时会有比较长的停滞时间，如果过小会导致假阳性。</li>
+<li>PacificA容忍更多的节点失败。</li>
+<li>PacificA的重新配置借助配置管理器可以很容易的实现。</li>
+</ol>
+<p>弱化一致性要求：租约过期的主节点或者从节点也允许处理query请求。</p>
+<h1 id="3-replication-for-distributed-log-based-storage-systems">3 REPLICATION FOR DISTRIBUTED LOG-BASED STORAGE SYSTEMS</h1>
+<img src="/static/PacificA%20Replication%20in%20Log-Based%20Distributed%20Stor%206514f49fc42c4b8a91f2da1663a6af6a/Untitled%202.png">
+<p>上图为单机架构。</p>
+<h2 id="31-logical-replication">3.1 Logical Replication</h2>
+<p>在应用日志基础上加上3个字段：配置版本、序列号、上个提交的序列号，即可以使用一个日志同时作为应用日志和prepared request存储。对于相同序列号的日志，高配置版本会覆盖低版本的日志。</p>
+<p>在第一个阶段，接收到prepare消息时，副本追加到日志中。在第二个阶段，请求提交时，被应用到内存中的数据结构中。</p>
+<p>在checkpoint后，可以截断已应用和已checkpoint的日志。</p>
+<p>logical-V是logical replication的变体，只有主节点维护内存状态，从节点只需要追加日志，而不需要应用到内存状态。主节点生成快照的时候，从节点也需要fetch快照，截断已被丢弃或者快照的日志。优势是从节点消耗更少的内存和CPU，缺点是更高的网络带宽消耗，主节点切换也需要花费更多的时间来重建内存状态。</p>
+<h2 id="32-layered-replication">3.2 Layered Replication</h2>
+<p>基于log的存储系统由两层构成：底层提供持久化文件存储，上层将应用逻辑变为文件操作。</p>
+<h2 id="33-log-merging">3.3 Log Merging</h2>
+<p>一个机器上有多个复制组时，需要合并日志以避免导致磁盘随机seek。</p>
+]]></content:encoded>
     </item>
     
     <item>
@@ -22,7 +116,142 @@
       <pubDate>Sun, 13 Nov 2022 08:47:05 +0800</pubDate>
       
       <guid>https://egolearner.github.io/post/diskann/</guid>
-      <description>Authors: Devvrit, Suhas Jayaram Subramanya Created: October 4, 2022 9:45 PM PublishedAt: NIPS URL: https://suhasjs.github.io/files/diskann_neurips19.pdf Year: 2019 Summary DiskANN使用64G RAM来索引和服务100维左右的10亿数据集，95%以上的1-recall@1的</description>
+      <description>&lt;ul&gt;
+&lt;li&gt;Authors: Devvrit, Suhas Jayaram Subramanya&lt;/li&gt;
+&lt;li&gt;Created: October 4, 2022 9:45 PM&lt;/li&gt;
+&lt;li&gt;PublishedAt: NIPS&lt;/li&gt;
+&lt;li&gt;URL: &lt;a href=&#34;https://suhasjs.github.io/files/diskann_neurips19.pdf&#34;&gt;https://suhasjs.github.io/files/diskann_neurips19.pdf&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;Year: 2019&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h1 id=&#34;summary&#34;&gt;&lt;strong&gt;Summary&lt;/strong&gt;&lt;/h1&gt;
+&lt;ol&gt;
+&lt;li&gt;DiskANN使用64G RAM来索引和服务100维左右的10亿数据集，95%以上的1-recall@1的时延在5ms以内。&lt;/li&gt;
+&lt;li&gt;提出Vamana图算法，直径比NSG和HNSW更小。&lt;/li&gt;
+&lt;li&gt;将点加入重叠聚类，每个聚类构建Vamana索引，然后通过合并边来实现图合并，和所有数据点构建单一索引的搜索性能相近。&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h2 id=&#34;strength&#34;&gt;&lt;strong&gt;Strength&lt;/strong&gt;&lt;/h2&gt;
+&lt;ol&gt;
+&lt;li&gt;通过将点加入重叠聚类，构建的图简单合并也有不错的效果。&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h2 id=&#34;weakness&#34;&gt;&lt;strong&gt;Weakness&lt;/strong&gt;&lt;/h2&gt;
+&lt;ol&gt;
+&lt;li&gt;图索引用在SSD上，直觉上太多随机访问效果应该会打折扣，虽然Vamana做了优化。后续的SPANN通过层次均衡聚类构建倒排索引，性能超过了DiskANN。&lt;/li&gt;
+&lt;li&gt;索引中需要同时存原始向量和PQ压缩向量，应该磁盘使用会比较大。&lt;/li&gt;
+&lt;li&gt;性能数据只比较了1-recall@1，很多系统在召回时不止召回一个。&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h2 id=&#34;take-away&#34;&gt;&lt;strong&gt;Take Away&lt;/strong&gt;&lt;/h2&gt;
+&lt;p&gt;图索引合并。&lt;/p&gt;</description>
+      <content:encoded><![CDATA[<ul>
+<li>Authors: Devvrit, Suhas Jayaram Subramanya</li>
+<li>Created: October 4, 2022 9:45 PM</li>
+<li>PublishedAt: NIPS</li>
+<li>URL: <a href="https://suhasjs.github.io/files/diskann_neurips19.pdf">https://suhasjs.github.io/files/diskann_neurips19.pdf</a></li>
+<li>Year: 2019</li>
+</ul>
+<h1 id="summary"><strong>Summary</strong></h1>
+<ol>
+<li>DiskANN使用64G RAM来索引和服务100维左右的10亿数据集，95%以上的1-recall@1的时延在5ms以内。</li>
+<li>提出Vamana图算法，直径比NSG和HNSW更小。</li>
+<li>将点加入重叠聚类，每个聚类构建Vamana索引，然后通过合并边来实现图合并，和所有数据点构建单一索引的搜索性能相近。</li>
+</ol>
+<h2 id="strength"><strong>Strength</strong></h2>
+<ol>
+<li>通过将点加入重叠聚类，构建的图简单合并也有不错的效果。</li>
+</ol>
+<h2 id="weakness"><strong>Weakness</strong></h2>
+<ol>
+<li>图索引用在SSD上，直觉上太多随机访问效果应该会打折扣，虽然Vamana做了优化。后续的SPANN通过层次均衡聚类构建倒排索引，性能超过了DiskANN。</li>
+<li>索引中需要同时存原始向量和PQ压缩向量，应该磁盘使用会比较大。</li>
+<li>性能数据只比较了1-recall@1，很多系统在召回时不止召回一个。</li>
+</ol>
+<h2 id="take-away"><strong>Take Away</strong></h2>
+<p>图索引合并。</p>
+<h1 id="1-引言">1 引言</h1>
+<p>总结当前10亿级向量检索的解决方案</p>
+<p>方案1。基于倒排索引和数据压缩，典型例子Faiss和IVFOADC+G+P。将向量划分为M个聚类，检索时只扫描m &laquo; M个分区；因为原始数据内存中放不下，使用使用PQ等量化手段来压缩数据。优点是内存使用低，128维10亿点使用小于64GB的内存。缺点是由于数据压缩有损，1-recall@1只有0.5左右。</p>
+<p>方案2。数据划分为不相交分片，每个分片构建内存索引。优点是召回很高，缺点是内存使用很大。</p>
+<p>论文认为上述两个方案的局限在于它们构建的索引只能使用内存服务。</p>
+<p>零售级的SSD一次随机读需要几百微秒，每秒能处理约300k的随机读。而搜索应用中最近邻检索的时延要求为几毫秒。因此设计高效的SSD驻留索引的关键有两点：减少随机SSD访问到几十个；减少到磁盘的round trip请求数到10个以内，最好到5个。（个人理解第一点在强调图的直径不能太大，第二点在强调减少磁盘访问，即后面提出的W参数）</p>
+<h1 id="2-vamana-图构建算法">2 Vamana 图构建算法</h1>
+<h2 id="21-近似邻居图和greedysearch算法">2.1 近似邻居图和GreedySearch算法</h2>
+<p>基于近似图的检索算法，一般采用贪心算法，从某个点出发，遍历图来渐近的趋向检索点。这要求近似图满足sparse neighborhood graph(SNG)的性质。SNG中确定一个点p的出邻居的过程如下：</p>
+<blockquote>
+<p>initialize a set S = P \ {p}. As long as S != ∅, add a directed edge from p to p∗, where p∗ is the closest point to p from S, and remove from S all points p′ such that d(p, p′) &gt; d(p∗, p′). It is then easy to see that GreedySearch(s, x_p, 1, 1) starting at any s ∈ P would converge to p for all base points p ∈ P .</p>
+</blockquote>
+<p>大致是从S中选依次选到p最近的点p*，然后移除S中到p比到p*更远的点，直到S为空。</p>
+<p>SNG的复杂度是O(n2)，因此不可行。本质上来说，HNSW和SSG都是对SNG的近似，因此这些算法输出的图的直径和密度都是不可灵活控制的。</p>
+<img src="/static/DiskANN%20Fast%20Accurate%20Billion-point%20Nearest%20Neighb%20121a2edf1de742c0be953e90c69ed864/Untitled.png">
+<h2 id="22-健壮剪枝过程">2.2 健壮剪枝过程</h2>
+<p>满足SNG性质的图的直径可能非常大。论文给出的极端情况为所有点都在一条直线上，按照SSG的选边算法每个点只会连接最近的两个点。而按照Vamana的算法，有可能连接更多的点。</p>
+<p>为了解决这个问题，引入乘数α&gt;1要求检索路径上的点到query的距离依次减少α倍。</p>
+<p>如果点p的出邻居通过RobustPrune(p, P \ {p}, α, n-1) 确定，可以保证GreedySearch(s, p, 1, 1) 从任意点s出发将在log复杂度内收敛到 p ∈ P。但是这需要O(n2)的运行时间。Vamana通过精心挑选V和远小于n-1的点来优化索引构建时间。</p>
+<p>RobustPrune最后的裁边中，通过引入α，将距离p*比距离p近1/α倍的点移除掉了，可以保留更多的长边（α越大，越有可能在候选集中保留距离p更远的点）。</p>
+<h2 id="23-vamana索引算法">2.3 Vamana索引算法</h2>
+<img src="/static/DiskANN%20Fast%20Accurate%20Billion-point%20Nearest%20Neighb%20121a2edf1de742c0be953e90c69ed864/Untitled%201.png">
+<ol>
+<li>首先随机初始化G，每个点有R个随机选择的出邻居。</li>
+<li>计算数据集P的中心点s，作为检索算法的起始点。</li>
+<li>随机遍历P的所有点p，对GreedySearch访问的点运行RobustPrune来得到点p的出邻居。</li>
+<li>对点p的出邻居p’添加反向边p’p，如果出度超过R则运行RobustPrune来选边。</li>
+</ol>
+<p>随着算法的运行，图变得一致地更好，GreedySearch运行更快。</p>
+<p>整体算法运行两遍，第一次使用α=1运行，第二次使用用户定义的α≥1运行。作者观察到第二次运行得到更好的图，如果两次都用用户定义的α运行会使索引算法变慢，因为第一次运行计算出的图的平均度数更大，计算时间也更长。（第一次运行如果使用α&gt;1的话，候选集中保留了更多的点，最后的度数也会更大）</p>
+<img src="/static/DiskANN%20Fast%20Accurate%20Billion-point%20Nearest%20Neighb%20121a2edf1de742c0be953e90c69ed864/Untitled%202.png">
+<p>第二次运行引入了长边。</p>
+<h2 id="24-对比hnsw和nsg">2.4 对比HNSW和NSG</h2>
+<p>HNSW和NSG没有超参数α，隐含使用了α=1. 这是Vamana实现在图的度数和直径之间更好权衡的主要因素。</p>
+<ul>
+<li>HNSW使用GreedySearch的输出作为剪枝的候选集，而Vamana和SNG都使用GreedySearch访问过的点作为候选集。直觉上来说，这帮助Vamana和NSG添加了长边，而HNSW只有邻近边还需要在采样的点上构建分层图。</li>
+<li>NSG要求输入为构建耗时长和内存使用高的kNN邻居图，HNSW和Vamana有更简单的初始化，HNSW使用空白图，Vamana使用随机图。Vamana使用随机图初始化比空白图初始化得到的结果图的质量更好。</li>
+<li>Vamana需要运行两遍，HNSW和NSG只需要运行一遍。</li>
+</ul>
+<h1 id="3-diskann构建ssd驻留的索引">3 DiskANN：构建SSD驻留的索引</h1>
+<h2 id="31-索引设计">3.1 索引设计</h2>
+<p>基本思想是构建Vamana索引并存储到SSD上。有两个问题需要解决：如何构建有10亿个点的图？内存中存不下的情况下如何计算query点和候选列表的点之间的距离？</p>
+<p>与其在检索时将query点路由到多个分片，不如将base point发往多个临近的中心点来形成重叠的聚类。</p>
+<ol>
+<li>将10亿个点使用k-means划分为k个聚类（比如k=40）</li>
+<li>将每个base point分配到l个最近的中心点（通常l=2就足够了）</li>
+<li>在每个聚类上构建Vamana索引，大约有Nl/k个点，可以在内存中构建。</li>
+<li>通过简单的合并边将多个图合并为一个图。</li>
+</ol>
+<p>经验地，不同聚类的重叠性提供了足够的连接性，即使query点的最近的邻居分开在多个分片时GreedySearch也能成功。</p>
+<p>解决第二个问题的思路为在内存中存储每个点的PQ压缩后的向量，同时在SSD上存储图。论文指出Vamana构建索引时使用全精度的坐标，因此即使在检索时使用压缩后的数据，也能高效的引导检索到图中正确的区域。</p>
+<h2 id="32-索引布局">3.2 索引布局</h2>
+<p>内存中存储压缩后的所有数据点，SSD上存储图和全精度的向量。在磁盘上，在每个点的≤R个邻居之后存储的是全精度向量。在度数小于R时补0，以便可以直接计算offset。</p>
+<h2 id="33-beam-search">3.3 Beam Search</h2>
+<p>基本的贪心算法的问题是需要有许多SSD roundtrip，导致高延迟。为了减少SSD roundtrip数而不过度增加计算量，我们一次获取 $\mathcal{L} \backslash \mathcal{V}$ 中W（比如4，8）个最近的点的邻居，更新$\mathcal{L}$为top L的候选集。注意从SSD读取少量的随机扇区的时间几乎和一个扇区的时间相同。修改后的检索算法称为BeamSearch。在W=1时，等价于贪心检索。如果W过大，比如16或更多，计算和SSD带宽都可能是浪费的。</p>
+<p>SSD带宽打满时，读延迟会超过1ms。因此需要在更低的负载下运维SSD以保证低检索延迟。论文发现在低平衡宽度时（如W=2,4,8）能在延迟和吞吐之间取得平衡。这时SSD的load factor在30-40%，每个线程query处理的时间中40-50%是在IO上。</p>
+<h2 id="34-缓存频繁访问的点">3.4 缓存频繁访问的点</h2>
+<p>为了进一步减少每个query的磁盘访问数，在内存中缓存一部分点，要么基于已知的query分布，要么简单的缓存从起始点开始C=3,4跳的点。因为点的个数随C指数增长，更大的C带来更大的内存使用。</p>
+<h2 id="35-使用全精度向量隐式re-ranking">3.5 使用全精度向量隐式Re-Ranking</h2>
+<p>PQ是有损压缩，因此使用PQ和使用真实距离计算的k个候选集可能有差别。为了消除差距，论文使用在每个点的邻居之后存储的全精度向量。邻居关系和全精度向量可以存储在同一扇区内，因此在BeamSearch加载邻居信息时，也可以缓存在搜索过程中访问过的所有点的全精度向量，而不使用额外的SSD读。这可以让我们基于全精度向量来返回top k候选集。（按上面的算法1，访问过的点都是要记录的，有额外的计算开销但没有内存开销。）</p>
+<h1 id="4-评估">4 评估</h1>
+<img src="/static/DiskANN%20Fast%20Accurate%20Billion-point%20Nearest%20Neighb%20121a2edf1de742c0be953e90c69ed864/Untitled%203.png">
+<p>所有数据集中，Vamana超过了HNSW。在GIST1M中，Vamana超过了NSG。另外在三个实验中，Vamana的索引构建时间短于HNSW和NSG。在DEEP1M上，分别为129s, 219s, 480s（包含EFANN构建kNN图的时间）。</p>
+<img src="/static/DiskANN%20Fast%20Accurate%20Billion-point%20Nearest%20Neighb%20121a2edf1de742c0be953e90c69ed864/Untitled%204.png">
+<p>跳数指在检索的关键路径中磁盘访问的轮数。HNSW和NSG有停滞的趋势，而Vamana随最大度数和α的增加跳数在减少。作者推断α&gt;1的Vamana相比其他图算法更有效的利用了SSD提供的大容量。</p>
+<img src="/static/DiskANN%20Fast%20Accurate%20Billion-point%20Nearest%20Neighb%20121a2edf1de742c0be953e90c69ed864/Untitled%205.png">
+<p>为了说明小索引合并算法的有效性，论文分别在高配机器上构建1份大索引和在低配机器上构建k份小索引并合并为1份索引。2(a)中单一索引的性能优于合并索引，因为合并索引需要遍历更多的连接。但合并索引的效果也足够好，优于当时的state-of-art IVFOADC+G+P，延时仅比单一索引慢不到20%.</p>
+<p>由于IVFOADC+G+P在之前的论文中证明了效果优于FAISS，论文只对比了DiskANN和IVFOADC+G+P。IVFOADC+G+P的1-recall@1上限为62.74%，而DiskANN为100%，满足1-recall@1高于95%时的时延在3.5ms以下。</p>
+<h1 id="参考资料">参考资料</h1>
+<p>审稿意见</p>
+<ul>
+<li><a href="https://proceedings.neurips.cc/paper/2019/file/09853c7fb1d3f8ee67a61b6bf4a7f8e6-Reviews.html">Reviews: DiskANN: Fast Accurate Billion-point Nearest Neighbor Search on a Single Node (neurips.cc)</a></li>
+</ul>
+<p>视频</p>
+<ul>
+<li><a href="https://northwestern.hosted.panopto.com/Panopto/Pages/Viewer.aspx?id=afbc4c0c-0464-499c-816c-af0e015777f8">Theory-in-Practice Day one- Harsha Simhadri (panopto.com)</a></li>
+<li><a href="https://www.youtube.com/watch?v=BnYNdSIKibQ">Research talk: Approximate nearest neighbor search systems at scale - YouTube</a></li>
+</ul>
+<p>论文笔记</p>
+<ul>
+<li><a href="https://mp.weixin.qq.com/s/KgjpRGF4AoUskFESZR4lxQ">Paper Reading | DiskANN： 十亿规模数据集上高召回高 QPS 的 ANNS 单机方案 (qq.com)</a></li>
+<li><a href="https://www.jianshu.com/p/07ed2202f107">2019NIPS-(大数据集基于图的KNN算法)DiskANN: Fast Accurate Billion-point Nearest Neighbor Search on a Single &hellip; - 简书 (jianshu.com)</a></li>
+<li><a href="https://blog.csdn.net/whenever5225/article/details/106863674">DiskANN：在单机上快速准确地进行十亿数据最近邻搜索(微软印度研究院)——NeurIPS 2019_程序员王同学的博客-CSDN博客</a></li>
+<li><a href="https://blog.csdn.net/whenever5225/article/details/122147361">DiskANN十亿级规模向量检索方案论文浅谈_程序员王同学的博客-CSDN博客</a></li>
+</ul>
+]]></content:encoded>
     </item>
     
     <item>
@@ -31,7 +260,161 @@
       <pubDate>Sun, 21 Aug 2022 22:06:36 +0800</pubDate>
       
       <guid>https://egolearner.github.io/post/polardb-serverless/</guid>
-      <description>Authors: Wei Cao, Yingqiang Zhang Created: August 21, 2022 7:46 AM PublishedAt: SIGMOD Tags: Database, serverless URL: https://www.cs.utah.edu/~lifeifei/papers/polardbserverless-sigmod21.pdf Year: 2021 Summary 通过计算、内存和存储的分离，来支持serverless按需分配资源。相当于将单机的实现原语扩展到分</description>
+      <description>&lt;ul&gt;
+&lt;li&gt;Authors: Wei Cao, Yingqiang Zhang&lt;/li&gt;
+&lt;li&gt;Created: August 21, 2022 7:46 AM&lt;/li&gt;
+&lt;li&gt;PublishedAt: SIGMOD&lt;/li&gt;
+&lt;li&gt;Tags: Database, serverless&lt;/li&gt;
+&lt;li&gt;URL: &lt;a href=&#34;https://www.cs.utah.edu/~lifeifei/papers/polardbserverless-sigmod21.pdf&#34;&gt;https://www.cs.utah.edu/~lifeifei/papers/polardbserverless-sigmod21.pdf&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;Year: 2021&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h1 id=&#34;summary&#34;&gt;&lt;strong&gt;Summary&lt;/strong&gt;&lt;/h1&gt;
+&lt;p&gt;通过计算、内存和存储的分离，来支持serverless按需分配资源。相当于将单机的实现原语扩展到分布式环境，使用各种方法来解决网络传输引入的问题（如时延、B树一致性）。&lt;/p&gt;</description>
+      <content:encoded><![CDATA[<ul>
+<li>Authors: Wei Cao, Yingqiang Zhang</li>
+<li>Created: August 21, 2022 7:46 AM</li>
+<li>PublishedAt: SIGMOD</li>
+<li>Tags: Database, serverless</li>
+<li>URL: <a href="https://www.cs.utah.edu/~lifeifei/papers/polardbserverless-sigmod21.pdf">https://www.cs.utah.edu/~lifeifei/papers/polardbserverless-sigmod21.pdf</a></li>
+<li>Year: 2021</li>
+</ul>
+<h1 id="summary"><strong>Summary</strong></h1>
+<p>通过计算、内存和存储的分离，来支持serverless按需分配资源。相当于将单机的实现原语扩展到分布式环境，使用各种方法来解决网络传输引入的问题（如时延、B树一致性）。</p>
+<h2 id="strength"><strong>Strength</strong></h2>
+<ul>
+<li>serverless，进一步解耦了资源分配。</li>
+</ul>
+<h2 id="weakness"><strong>Weakness</strong></h2>
+<ul>
+<li>比较复杂。</li>
+<li>复杂场景的实用性一般，比如号称支持Auto Scaling，但是类似双十一的场景应该还支持不了。</li>
+</ul>
+<h2 id="take-away"><strong>Take Away</strong></h2>
+<h1 id="论文内容">论文内容</h1>
+<h2 id="概述">概述</h2>
+<img src="/static/PolarDB%20Serverless%20A%20Cloud%20Native%20Database%20for%20Dis%207fe5181874d5494aa4df51b19b426dc3/Untitled.png">
+<p>云数据库的典型架构，最右为PolarDB serverless（后面简称PS)。</p>
+<p>单体机和存储计算分离架构的问题是，资源存在绑定关系，不能方便的按需扩展一种资源而不带来其他资源的浪费。</p>
+<p>在PS架构中，cpu, memory和存储都可以独立提升利用率和扩展容量。而且远程内存池的数据页可以被多个数据库进程共享。增加读副本只有少量的本地内存开销。</p>
+<p>从架构上来说，类似于将单机的各组件分布式化，所以也需要用类似cache invalidation的机制来保证事务执行的正确性。分布式化后有网络开销，为了让事务执行更快，使用RDMA高速网络连接各组件，并使用RDMA verb来做优化，例如使用RDMA CAS来优化global latch的获取。</p>
+<h2 id="背景">背景</h2>
+<img src="/static/PolarDB%20Serverless%20A%20Cloud%20Native%20Database%20for%20Dis%207fe5181874d5494aa4df51b19b426dc3/Untitled%201.png">
+<p>PolarDB的计算层包括一个主节点（RW）和多个读节点（RO），存储层使用PolarFS。</p>
+<p>存储层的每个chunk有三副本，通过Parallel Raft来保证linear serializable。</p>
+<p>RW和RO通过redo log来同步内存状态，使用LSN来协调一致性。RW将redo log刷新到PolarFS后②，事务即可以提交。RW将redo log已更新和最新的LSN_RW异步广播到所有的RO节点④。RO收到通知后，从PolarFS拉取redo log的更新，应用到buffer pool中。RO将消费的redo log LSN_RO在响应中回复给RW，然后RW可以清除已消费的redo log，将比min{LSN_RO}更老的脏页在后台刷新到PolarFS⑧。落后太多的RO节点被踢出集群，避免拖慢RW刷新脏页。</p>
+<img src="/static/PolarDB%20Serverless%20A%20Cloud%20Native%20Database%20for%20Dis%207fe5181874d5494aa4df51b19b426dc3/Untitled%202.png">
+<p>为了保证低延迟，一个数据库实例的计算、内存和存储资源分配在同一PoD下，计算和存储倾向于分配在同一ToR下面。</p>
+<h2 id="设计">设计</h2>
+<p>和PolarDB架构类似，每个PolarDB serverless实例同样由多个代理节点，一个RW节点和多个RO节点构成，使用PolarFS作为底层存储池。</p>
+<p>远程内存引入的问题及解决方案</p>
+<ul>
+<li>访问延迟。引入分层内存系统和预取等优化。</li>
+<li>内存页变为共享资源，需要跨节点互斥机制。</li>
+<li>页的传输造成给网络带来负担。PS将redo log写入存储，从日志异步物化page。</li>
+</ul>
+<h3 id="disaggregated-memory">Disaggregated Memory</h3>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-jsx" data-lang="jsx"><span class="line"><span class="cl"><span class="kr">int</span>  <span class="nx">page_register</span><span class="p">(</span><span class="nx">PageID</span> <span class="nx">page_id</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                   <span class="kr">const</span> <span class="nx">Address</span> <span class="nx">local_addr</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                   <span class="nx">Address</span><span class="o">&amp;</span> <span class="nx">remote_addr</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                   <span class="nx">Address</span><span class="o">&amp;</span> <span class="nx">pl_addr</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                   <span class="nx">bool</span><span class="o">&amp;</span> <span class="nx">exists</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="kr">int</span>  <span class="nx">page_unregister</span><span class="p">(</span><span class="nx">PageID</span> <span class="nx">page_id</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="kr">int</span>  <span class="nx">page_read</span><span class="p">(</span><span class="kr">const</span> <span class="nx">Address</span> <span class="nx">local_addr</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">               <span class="kr">const</span> <span class="nx">Address</span> <span class="nx">remote_addr</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="kr">int</span>  <span class="nx">page_write</span><span class="p">(</span><span class="kr">const</span> <span class="nx">Address</span> <span class="nx">local_addr</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                <span class="kr">const</span> <span class="nx">Address</span> <span class="nx">remote_addr</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="kr">int</span>  <span class="nx">page_invalidate</span><span class="p">(</span><span class="nx">PageID</span> <span class="nx">page_id</span><span class="p">);</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>page_invalidate用于RW来invalidate所有RO节点本地的副本。</p>
+<ul>
+<li>Page Address Table(PAT)记录每个页的位置（slab node id和物理地址）和引用计数。
+<ul>
+<li>在page_register中，home node通过查询PAT来确定页是否已存在。新创建的页加入PAT中。</li>
+<li>在page_unregister中，当一个页的引用计数变为0时，从远程内存池中弹出，并删除PAT的相应项。</li>
+</ul>
+</li>
+<li>Page Invalidation Bitmap(PIB)。对PAT的每个项，在PIB中有一个invalidation位。0指是最新的，1指RW已更新但没刷新到远程内存池中。每个RO节点上也有一个本地PIB。</li>
+<li>Page Reference Directory(PRD)。对PAT的每一项，记录引用这个页的数据库节点。PIB和PRD一起用于实现cache coherency。</li>
+<li>Page Latch Table(PLT)。PAT的每一项有个全局的latch，用于保证B+树的完整性。</li>
+</ul>
+<p>存储支持页物化卸载，脏页也可以马上弹出而不需要先刷新。</p>
+<p>由于网络延迟，需要本地cache。本地cache的大小采用了经验值远程内存大小/8，128GB.</p>
+<p>如果访问的页不在远程内存中，会从PolarFS中加载，然后写入到远程内存中。并非所有从PolarFS中读到的页都需要写入到远程内存中，例如全表扫描的时候。</p>
+<img src="/static/PolarDB%20Serverless%20A%20Cloud%20Native%20Database%20for%20Dis%207fe5181874d5494aa4df51b19b426dc3/Untitled%203.png">
+<p>在PS中，RW可以将修改的页写回到远程内存中，然后RO马上就可见，因此不需要使用PolarDB中的redo log机制。但是，为了降低网络通信的开销，RW的修改会缓存在本地而不是马上同步到远程内存。因此需要cache invalidation机制。</p>
+<p>RW更新本地cached的页后，调用page_invalidate①，它会设置home node上的PIB的相应位，通过查询PRD得到RO节点列表，然后设置这些RO节点上的PIB的相应位。page_invalidate是同步阻塞函数。如果异常的RO节点超时不响应，会被剔出集群以保证page_invalidate成功。</p>
+<h3 id="b树结构一致性">B+树结构一致性</h3>
+<p>在PS中，只有RW可以修改页，因此不需要防止多个节点导致的写冲突。但Structure Modification Operation(SMO)会同时修改多个页，可能导致RO看到不一致的结构。PS使用PL来解决这个问题。</p>
+<p>所有SMO涉及的页需要上PL X锁直到SMO完成。因此所有RO上的读操作需要需要检查PLT看读的页是否有X锁，然后加上S锁。</p>
+<p>对RW insert/delete操作，PS采用两步优化。假定不需要有SMO，做乐观树遍历，这时只需要本地latch。如果乐观遍历找到的叶节点页相对满或者空，有可能发生SMO，则再从root开始一次悲观遍历，同时加上X锁和X-PL锁。</p>
+<p>为了降低PL锁的成本，PL有粘滞属性，没有读节点的请求时不需要在SMO完成后马上释放。</p>
+<p>为了加速PL获取操作，先用RDMA CAS来尝试获取锁。如果快速路径失败，例如给已经有S锁的PL加X锁，再在home node和数据库节点间协调，调用方需要等待协调完成。</p>
+<h3 id="快照隔离">快照隔离</h3>
+<p>PS基于MVCC来实现SI(快照隔离）。</p>
+<p>RW中维护被称为CTS的中心化的时间戳（序列号），负责给所有数据库节点分配递增的时间戳。</p>
+<ul>
+<li>读写操作从CTS获取两次时间戳，在事务开始时获取cts_commit，在事务结束时获取cts_commit。在事务提交时将cts_commit和修改的记录一起写入。所有的记录和undo记录预留了一列来存储修改它的事务的cts_commit。事务中的读总是返回cts_commit小于事务的cts_read的最新记录。每个版本的记录还存储了修改它的事务id，因此事务认识自己的写。</li>
+<li>只读事务只需要在开始时获取cts_read。</li>
+</ul>
+<p>论文后面讲了如何解决都事务修改的行很多无法立即更新cts_commit的问题，通过查找RW上的CTS日志。</p>
+<p>为了优化，使用RDMA CAS来原子的获取和递增CTS时间戳计数器。</p>
+<h3 id="页物化卸载page-materialization-offloading">页物化卸载(Page Materialization Offloading)</h3>
+<p>传统单体DB会定期将脏页刷新到持久存储上，但在PS上这么做会导致大量网络通信。</p>
+<p>论文扩展了PolarFS，将日志和页分开存储为log trunk和page trunk。Redo log先持久化到log trunk，然后异步发送到page trunk，log被应用以更新页。为了重用PolarFS的组件和最小化改动，日志只发送到page trunk的leader节点，再由leader节点物化页和通过ParallelRaft传播更新到其他副本。虽然增加了ApplyLog的延迟，但ApplyLog本身是异步操作不是关键路径。</p>
+<img src="/static/PolarDB%20Serverless%20A%20Cloud%20Native%20Database%20for%20Dis%207fe5181874d5494aa4df51b19b426dc3/Untitled%204.png">
+<h3 id="auto-scaling">Auto-Scaling</h3>
+<p>在版本升级或跨节点迁移时，proxy节点负责维护客户端连接。暂停事务执行，等待100ms，足以让老的RW节点完成大部分的进行中的语句。之后老的节点刷新脏页到共享内存并关机。同时，RW节点attach到共享内存，初始化本地内存状态。最后，proxy连接到新的RW节点，恢复会话状态，转发等待的语句来执行。老的RW节点没来得及完成的长执行的语句，将会在新的RW节点回滚后重新提交。</p>
+<p>对于长执行的多语句事务，如批量插入，proxy对每个语句跟踪保存点，发生切换时proxy可以让新的RW node从最新的保存点继续执行。</p>
+<p>切换时正在执行的事务需要暂停，PS使用共享内存相比传统的依赖远程存储要快。目前暂停时间为2-3秒。</p>
+<h2 id="性能优化">性能优化</h2>
+<h3 id="乐观锁">乐观锁</h3>
+<p>读节点假定没有SMO。RW维护SMO计数器，SMO_RW，SMO发生时计数器加1，SMO发生时SMO_RW的快照记录到SMO修改的每个页中（记为SMO_page）。在query的开始，获取SMO计数器的值计为SMO_query，RO从root遍历时如果发现SMO_page大于SMO_query，意味着query过程中发生了SMO，需要重试或者回退到悲观锁。</p>
+<h3 id="索引感知预取">索引感知预取</h3>
+<p>Batched Key Prepare(BKP)的接口接收要预取的一组key，接口被调用时，存储引擎开启后台预取任务，从目标索引中获取需要的key，并在必要时从远程内存或存储中获取相应的数据页。</p>
+<h2 id="可靠性和错误恢复">可靠性和错误恢复</h2>
+<h3 id="数据库节点恢复">数据库节点恢复</h3>
+<p>RO节点可以直接替换。</p>
+<p>RW节点分为预期和非预期的节点替换。</p>
+<p>**非预期的RW节点失败。**集群管理者CM通过心跳判断RW节点失败时，发起RO节点升级流程。</p>
+<ol>
+<li>CM通知内存和存储节点拒绝原RW节点之后的写请求。</li>
+<li>CM选一个RO节点，通知它升级了，记为RW’。</li>
+<li>RW’从每个PolarFS page chunk收集最新版本，LSN_chunk，其中的最小值作为检查点版本LSN_cp。</li>
+<li>RW’从持久化PolarFS log chunk上读取redo log记录，从LSN_cp开始读到结束位置LSN_tail，将它们分发到page chunk，等待page chunk来消费redo log和完成恢复。</li>
+<li>RW’扫描远程内存池，弹出invalidation位为1的页，以及页版本LSN_page大于LSN_tail的页。</li>
+<li>RW’释放所有原RW节点获取的PL锁。</li>
+<li>RW’扫描undo header来构建所有活跃事务在原RW节点失败时的状态。</li>
+<li>RW’在通知CM完成升级后，准备好接收新请求。</li>
+<li>RW’在后台回放undo log来回滚未提交的事务。</li>
+</ol>
+<p>3、4两步执行ARIES的REDO阶段，并发在许多page chunk节点上执行。</p>
+<p>大多数活跃数据仍然存在在远程内存中，可以避免传统主从复制架构的冷数据问题。</p>
+<p>**计划内节点退位。**RW节点会做一些清理，例如同步redo log到page chunk，主动释放所有PL锁，写脏页到远程内存，最终刷新redo log到PolarFS。新的RW节点可以省去4、5、6步。另外，新节点可以推迟即位直到活跃事务数变低。</p>
+<h3 id="内存节点恢复">内存节点恢复</h3>
+<p>home node保存的元数据以同步的方式也保存到slave replica中。home node负责检测slave node的失败。</p>
+<h3 id="集群恢复">集群恢复</h3>
+<p>极端情况下，所有home node的副本不可用，需要做集群恢复。所有的数据库节点和内存节点从干净状态重启，所有的内存状态从存储重建。初始化之后，RW节点执行并行REDO恢复，然后扫描undo header来找到所有未完成的事务，之后开始服务，并在后台回滚未提交的事务。</p>
+<p>集群恢复时有cold cache问题。</p>
+<h1 id="参考">参考</h1>
+<p><a href="https://zhuanlan.zhihu.com/p/382109937">全新存算分离架构——[SIGMOD2021] PolarDB Serverless: A Cloud Native Database for Disaggregated Data Centers 笔记 - 知乎 (zhihu.com)</a></p>
+<p><a href="https://nan01ab.github.io/2021/06/PolarDB-Serverless.html">PolarDB Serverless · Columba M71&rsquo;s Blog (nan01ab.github.io)</a></p>
+]]></content:encoded>
     </item>
     
   </channel>

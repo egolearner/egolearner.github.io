@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
-<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
   <channel>
-    <title>bloom-filter on A lifelong learner.</title>
+    <title>Bloom-Filter on A lifelong learner.</title>
     <link>https://egolearner.github.io/tags/bloom-filter/</link>
-    <description>Recent content in bloom-filter on A lifelong learner.</description>
+    <description>Recent content in Bloom-Filter on A lifelong learner.</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-cn</language>
     <lastBuildDate>Sun, 04 Aug 2024 23:44:31 +0800</lastBuildDate><atom:link href="https://egolearner.github.io/tags/bloom-filter/index.xml" rel="self" type="application/rss+xml" />
@@ -13,7 +13,405 @@
       <pubDate>Sun, 04 Aug 2024 23:44:31 +0800</pubDate>
       
       <guid>https://egolearner.github.io/post/quotient-filter/</guid>
-      <description>quotient filter(QF)不存储原始的key，而是存储原始key的指纹，因此在指纹冲突时，无法区分key是否真的存在，此时也会false posi</description>
+      <description>&lt;p&gt;quotient filter(QF)不存储原始的key，而是存储原始key的指纹，因此在指纹冲突时，无法区分key是否真的存在，此时也会false positive。论文中硬冲突定义为指纹冲突，软冲突定义为指纹不同但是商相同。&lt;/p&gt;</description>
+      <content:encoded><![CDATA[<p>quotient filter(QF)不存储原始的key，而是存储原始key的指纹，因此在指纹冲突时，无法区分key是否真的存在，此时也会false positive。论文中硬冲突定义为指纹冲突，软冲突定义为指纹不同但是商相同。</p>
+<p>相比bloom filter的优势</p>
+<ul>
+<li>cache友好。</li>
+<li>支持扩容。</li>
+<li>支持合并。</li>
+<li>支持删除。</li>
+</ul>
+<h2 id="原理">原理</h2>
+<p>quotient filter底层实现使用了hash table。Quotienting将指纹分为商和余数两部分，商为指纹的高q位，余数为指纹的低r位。商用于定位到hash表的bucket，而余数则作为hash表的值存储起来。注意，通过将商和余数结合起来能够重建hash，而不需要使用原始的key重新哈希，这也是quotient filter支持扩容和合并等操作的关键所在。</p>
+<p>在hash表冲突（即不同key的指纹的商相同）时，使用线性探测法来存储。使用线性推测法时，相同商的指纹的余数部分连续存储。quotient附加了额外的约束来加快检索，要求余数从小到大排序。排序有三个作用</p>
+<ol>
+<li>检索时只需要扫描到≥余数的桶就可以停止扫描；</li>
+<li>在合并QF时可以有序合并；</li>
+<li>扩容时效率更高。扩容时增加商的位数，将余数的高位移至商的低位。余数的有序性保证了顺序扫描时新的商和新的余数都是递增的。</li>
+</ol>
+<p>相同商的指纹的余数构成了一个run，由于冲突的存在，一个run的实际存储位置和正式位置（根据商定位到的bucket）会不同。 run 指的是一段商相同的连续记录的余数，如下图 c、d、e 的商均为 3；cluster 指多个连续的 run，并且首个 run 从商对应的位置开始，而后续的 run 并不是从商对应的位置开始的。如图中标出的 cluster，首个 run 从 3 开始，和商相同，第二个 run 从 6 开始，而余数为 4，第三个 run 从 7 开始，而余数为 6。</p>
+<p>其中在存储余数的同时，还会在每个哈希桶中增设 3 个元信息位<code>is_occupied</code>、<code>is_continuation</code>和<code>is_shifted</code>。<code>is_occupied</code>表示过滤器中是否有和余数对应的商，其与下标所对应的商相同，如 c、d、e 的商均为 3，因此下标为 3 的哈希桶<code>is_occupied</code>位是 1。<code>is_continuation</code>表示当前哈希桶中的余数，是否和左边相邻的元素属于一个 run，如下标 4 的哈希桶中余数，与下标 3 的哈希桶中余数属于一个 run，因此<code>is_continuation</code>为 1。<code>is_shifted</code>表示余数存储的位置是否和余数对应的商表示的下标有偏移，如 c 存储的位置与 c 对应的商表示的下标均为 3，因此<code>is_shifted</code>为 0；而 f 存储的位置为 6，f 对应的商表示的下标为 4，因此<code>is_shifted</code>为 1。</p>
+<img src="/static/quotient%20filter%205cc6b128afa041a3ae2a565a9479ea03/Untitled.png">
+<p>上图给出了一个示例，分别是等价的使用开链和使用线性探测结合元信息bit位的hash表示。</p>
+<p><a href="https://en.wikipedia.org/wiki/Quotient_filter">Quotient filter - Wikipedia</a></p>
+<table>
+  <thead>
+      <tr>
+          <th style="text-align: left">is_occupied</th>
+          <th style="text-align: left">is_continuation</th>
+          <th style="text-align: left">is_shifted</th>
+          <th style="text-align: left">meaning</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td style="text-align: left">0</td>
+          <td style="text-align: left">0</td>
+          <td style="text-align: left">0</td>
+          <td style="text-align: left">Empty Slot</td>
+      </tr>
+      <tr>
+          <td style="text-align: left">0</td>
+          <td style="text-align: left">0</td>
+          <td style="text-align: left">1</td>
+          <td style="text-align: left">Slot is holding start of run that has been shifted from its canonical slot.</td>
+      </tr>
+      <tr>
+          <td style="text-align: left">0</td>
+          <td style="text-align: left">1</td>
+          <td style="text-align: left">0</td>
+          <td style="text-align: left">not used.</td>
+      </tr>
+      <tr>
+          <td style="text-align: left">0</td>
+          <td style="text-align: left">1</td>
+          <td style="text-align: left">1</td>
+          <td style="text-align: left">Slot is holding continuation of run that has been shifted from its canonical slot.</td>
+      </tr>
+      <tr>
+          <td style="text-align: left">1</td>
+          <td style="text-align: left">0</td>
+          <td style="text-align: left">0</td>
+          <td style="text-align: left">Slot is holding start of run that is in its canonical slot.This is also the start of the cluster.</td>
+      </tr>
+      <tr>
+          <td style="text-align: left">1</td>
+          <td style="text-align: left">0</td>
+          <td style="text-align: left">1</td>
+          <td style="text-align: left">Slot is holding start of run that has been shifted from its canonical slot.Also the run for which this is the canonical slot exists but is shifted right.</td>
+      </tr>
+      <tr>
+          <td style="text-align: left">1</td>
+          <td style="text-align: left">1</td>
+          <td style="text-align: left">0</td>
+          <td style="text-align: left">not used.</td>
+      </tr>
+      <tr>
+          <td style="text-align: left">1</td>
+          <td style="text-align: left">1</td>
+          <td style="text-align: left">1</td>
+          <td style="text-align: left">Slot is holding continuation of run that has been shifted from its canonical slot.Also the run for which this is the canonical slot exists but is shifted right.</td>
+      </tr>
+  </tbody>
+</table>
+<h2 id="实现">实现</h2>
+<p>下文中的代码均来自 <a href="https://github.com/vedantk/quotient-filter">https://github.com/vedantk/quotient-filter</a> 。</p>
+<h3 id="定位run的起始下标">定位run的起始下标</h3>
+<p>fq为要查找的商。由于前面的商可能挤占了fq的位置，fq不一定在正式的位置。</p>
+<ol>
+<li>第1个循环向左查找，找到cluster的起始位置。cluster起始位置的is-shifted位一定为0.</li>
+<li>第2.1个循环跳过其他的run，找到下一个没有设置is-continuation的下标。</li>
+<li>第2.2个循环找到下一个run，即设置了is-occupied的下标。</li>
+</ol>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="cm">/* Find the start index of the run for fq (given that the run exists). */</span>
+</span></span><span class="line"><span class="cl"><span class="k">static</span> <span class="kt">uint64_t</span> <span class="nf">find_run_index</span><span class="p">(</span><span class="k">struct</span> <span class="n">quotient_filter</span> <span class="o">*</span><span class="n">qf</span><span class="p">,</span> <span class="kt">uint64_t</span> <span class="n">fq</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="cm">/* Find the start of the cluster. */</span>
+</span></span><span class="line"><span class="cl">	<span class="kt">uint64_t</span> <span class="n">b</span> <span class="o">=</span> <span class="n">fq</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">	<span class="k">while</span> <span class="p">(</span><span class="nf">is_shifted</span><span class="p">(</span><span class="nf">get_elem</span><span class="p">(</span><span class="n">qf</span><span class="p">,</span> <span class="n">b</span><span class="p">)))</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="n">b</span> <span class="o">=</span> <span class="nf">decr</span><span class="p">(</span><span class="n">qf</span><span class="p">,</span> <span class="n">b</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="cm">/* Find the start of the run for fq. */</span>
+</span></span><span class="line"><span class="cl">	<span class="kt">uint64_t</span> <span class="n">s</span> <span class="o">=</span> <span class="n">b</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">	<span class="k">while</span> <span class="p">(</span><span class="n">b</span> <span class="o">!=</span> <span class="n">fq</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="k">do</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">			<span class="n">s</span> <span class="o">=</span> <span class="nf">incr</span><span class="p">(</span><span class="n">qf</span><span class="p">,</span> <span class="n">s</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">		<span class="p">}</span> <span class="k">while</span> <span class="p">(</span><span class="nf">is_continuation</span><span class="p">(</span><span class="nf">get_elem</span><span class="p">(</span><span class="n">qf</span><span class="p">,</span> <span class="n">s</span><span class="p">)));</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">		<span class="k">do</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">			<span class="n">b</span> <span class="o">=</span> <span class="nf">incr</span><span class="p">(</span><span class="n">qf</span><span class="p">,</span> <span class="n">b</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">		<span class="p">}</span> <span class="k">while</span> <span class="p">(</span><span class="o">!</span><span class="nf">is_occupied</span><span class="p">(</span><span class="nf">get_elem</span><span class="p">(</span><span class="n">qf</span><span class="p">,</span> <span class="n">b</span><span class="p">)));</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="k">return</span> <span class="n">s</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h3 id="查找">查找</h3>
+<ol>
+<li>计算商fq和余数fr，T_fq为fq处存储的值。</li>
+<li>如果is-occupied位没有设置，则一定不存在。</li>
+<li>找到run的起始位置，依次扫描run中的元素，如果余数相同，则可能存在。如果余数大于fr，则一定不存在。</li>
+</ol>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-elm" data-lang="elm"><span class="line"><span class="cl"><span class="nv">bool</span> <span class="nv">qf_may_contain</span><span class="p">(</span><span class="nv">struct</span> <span class="nv">quotient_filter</span> <span class="nf">*</span><span class="nv">qf</span><span class="p">,</span> <span class="nv">uint</span><span class="mi">64</span><span class="nv">_t</span> <span class="nv">hash</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="nv">uint</span><span class="mi">64</span><span class="nv">_t</span> <span class="nv">fq</span> <span class="nf">=</span> <span class="nv">hash_to_quotient</span><span class="p">(</span><span class="nv">qf</span><span class="p">,</span> <span class="nv">hash</span><span class="p">)</span><span class="err">;</span>
+</span></span><span class="line"><span class="cl">	<span class="nv">uint</span><span class="mi">64</span><span class="nv">_t</span> <span class="nv">fr</span> <span class="nf">=</span> <span class="nv">hash_to_remainder</span><span class="p">(</span><span class="nv">qf</span><span class="p">,</span> <span class="nv">hash</span><span class="p">)</span><span class="err">;</span>
+</span></span><span class="line"><span class="cl">	<span class="nv">uint</span><span class="mi">64</span><span class="nv">_t</span> <span class="kt">T_fq</span> <span class="nf">=</span> <span class="nv">get_elem</span><span class="p">(</span><span class="nv">qf</span><span class="p">,</span> <span class="nv">fq</span><span class="p">)</span><span class="err">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="nf">/*</span> <span class="kt">If</span> <span class="nv">this</span> <span class="nv">quotient</span> <span class="nv">has</span> <span class="nv">no</span> <span class="nv">run</span><span class="p">,</span> <span class="nv">give</span> <span class="nv">up</span><span class="nf">.</span> <span class="nf">*/</span>
+</span></span><span class="line"><span class="cl">	<span class="kr">if</span> <span class="p">(</span><span class="err">!</span><span class="nv">is_occupied</span><span class="p">(</span><span class="kt">T_fq</span><span class="p">))</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nv">return</span> <span class="nv">false</span><span class="err">;</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="nf">/*</span> <span class="kt">Scan</span> <span class="nv">the</span> <span class="nv">sorted</span> <span class="nv">run</span> <span class="nv">for</span> <span class="nv">the</span> <span class="nv">target</span> <span class="nv">remainder</span><span class="nf">.</span> <span class="nf">*/</span>
+</span></span><span class="line"><span class="cl">	<span class="nv">uint</span><span class="mi">64</span><span class="nv">_t</span> <span class="nv">s</span> <span class="nf">=</span> <span class="nv">find_run_index</span><span class="p">(</span><span class="nv">qf</span><span class="p">,</span> <span class="nv">fq</span><span class="p">)</span><span class="err">;</span>
+</span></span><span class="line"><span class="cl">	<span class="nv">do</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nv">uint</span><span class="mi">64</span><span class="nv">_t</span> <span class="nv">rem</span> <span class="nf">=</span> <span class="nv">get_remainder</span><span class="p">(</span><span class="nv">get_elem</span><span class="p">(</span><span class="nv">qf</span><span class="p">,</span> <span class="nv">s</span><span class="p">))</span><span class="err">;</span>
+</span></span><span class="line"><span class="cl">		<span class="kr">if</span> <span class="p">(</span><span class="nv">rem</span> <span class="nf">==</span> <span class="nv">fr</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">			<span class="nv">return</span> <span class="nv">true</span><span class="err">;</span>
+</span></span><span class="line"><span class="cl">		<span class="p">}</span> <span class="kr">else</span> <span class="kr">if</span> <span class="p">(</span><span class="nv">rem</span> <span class="nf">&gt;</span> <span class="nv">fr</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">			<span class="nv">return</span> <span class="nv">false</span><span class="err">;</span>
+</span></span><span class="line"><span class="cl">		<span class="p">}</span>
+</span></span><span class="line"><span class="cl">		<span class="nv">s</span> <span class="nf">=</span> <span class="nv">incr</span><span class="p">(</span><span class="nv">qf</span><span class="p">,</span> <span class="nv">s</span><span class="p">)</span><span class="err">;</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span> <span class="nv">while</span> <span class="p">(</span><span class="nv">is_continuation</span><span class="p">(</span><span class="nv">get_elem</span><span class="p">(</span><span class="nv">qf</span><span class="p">,</span> <span class="nv">s</span><span class="p">)))</span><span class="err">;</span>
+</span></span><span class="line"><span class="cl">	<span class="nv">return</span> <span class="nv">false</span><span class="err">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h3 id="插入">插入</h3>
+<p>元信息变更情况：</p>
+<ul>
+<li>桶fq 的<code>is_occupied</code>需置为 1</li>
+<li>若元素并不是 run 内的首个元素，则需要将元素 remainder 的<code>is_continuation</code>置为 1，否则将当前 run 开始的<code>is_continuation</code>置为 1（因为添加完成后，当前 run 的开始变成了延续）</li>
+<li>向后移动已有 remainder 时<code>is_shifted</code>均会置 1，<code>is_occupied</code>保持在原有的 quotient 处</li>
+</ul>
+<p>具体步骤</p>
+<ol>
+<li>计算余数fq，商fr，T_fq为fq处的值。</li>
+<li>第13行为最基本的情况，位置为空，即3个位都没有设置，此时设置is-occupied位，并填充余数就大功告成了。</li>
+<li>19行判断如果没有设置过is-occupied位， 则进行设置。</li>
+<li>26行判断如果已经设置过is-occupied位，则需要找到fr的插入位置，即已有余数中&gt;fr的第一个位置。38行中fr为run的新head时，原有head需要设置is-continuation位，否则44行设置新元素的is-continuation位。</li>
+<li>后面调用insert_into来将entry插入到QF中。</li>
+</ol>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span><span class="lnt">42
+</span><span class="lnt">43
+</span><span class="lnt">44
+</span><span class="lnt">45
+</span><span class="lnt">46
+</span><span class="lnt">47
+</span><span class="lnt">48
+</span><span class="lnt">49
+</span><span class="lnt">50
+</span><span class="lnt">51
+</span><span class="lnt">52
+</span><span class="lnt">53
+</span><span class="lnt">54
+</span><span class="lnt">55
+</span><span class="lnt">56
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="kt">bool</span> <span class="nf">qf_insert</span><span class="p">(</span><span class="k">struct</span> <span class="n">quotient_filter</span> <span class="o">*</span><span class="n">qf</span><span class="p">,</span> <span class="kt">uint64_t</span> <span class="n">hash</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="p">(</span><span class="n">qf</span><span class="o">-&gt;</span><span class="n">qf_entries</span> <span class="o">&gt;=</span> <span class="n">qf</span><span class="o">-&gt;</span><span class="n">qf_max_size</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="k">return</span> <span class="nb">false</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="kt">uint64_t</span> <span class="n">fq</span> <span class="o">=</span> <span class="nf">hash_to_quotient</span><span class="p">(</span><span class="n">qf</span><span class="p">,</span> <span class="n">hash</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">	<span class="kt">uint64_t</span> <span class="n">fr</span> <span class="o">=</span> <span class="nf">hash_to_remainder</span><span class="p">(</span><span class="n">qf</span><span class="p">,</span> <span class="n">hash</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">	<span class="kt">uint64_t</span> <span class="n">T_fq</span> <span class="o">=</span> <span class="nf">get_elem</span><span class="p">(</span><span class="n">qf</span><span class="p">,</span> <span class="n">fq</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">	<span class="kt">uint64_t</span> <span class="n">entry</span> <span class="o">=</span> <span class="p">(</span><span class="n">fr</span> <span class="o">&lt;&lt;</span> <span class="mi">3</span><span class="p">)</span> <span class="o">&amp;</span> <span class="o">~</span><span class="mi">7</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="cm">/* Special-case filling canonical slots to simplify insert_into(). */</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="p">(</span><span class="nf">is_empty_element</span><span class="p">(</span><span class="n">T_fq</span><span class="p">))</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nf">set_elem</span><span class="p">(</span><span class="n">qf</span><span class="p">,</span> <span class="n">fq</span><span class="p">,</span> <span class="nf">set_occupied</span><span class="p">(</span><span class="n">entry</span><span class="p">));</span>
+</span></span><span class="line"><span class="cl">		<span class="o">++</span><span class="n">qf</span><span class="o">-&gt;</span><span class="n">qf_entries</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">		<span class="k">return</span> <span class="nb">true</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nf">is_occupied</span><span class="p">(</span><span class="n">T_fq</span><span class="p">))</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nf">set_elem</span><span class="p">(</span><span class="n">qf</span><span class="p">,</span> <span class="n">fq</span><span class="p">,</span> <span class="nf">set_occupied</span><span class="p">(</span><span class="n">T_fq</span><span class="p">));</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="kt">uint64_t</span> <span class="n">start</span> <span class="o">=</span> <span class="nf">find_run_index</span><span class="p">(</span><span class="n">qf</span><span class="p">,</span> <span class="n">fq</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">	<span class="kt">uint64_t</span> <span class="n">s</span> <span class="o">=</span> <span class="n">start</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="p">(</span><span class="nf">is_occupied</span><span class="p">(</span><span class="n">T_fq</span><span class="p">))</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="cm">/* Move the cursor to the insert position in the fq run. */</span>
+</span></span><span class="line"><span class="cl">		<span class="k">do</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">			<span class="kt">uint64_t</span> <span class="n">rem</span> <span class="o">=</span> <span class="nf">get_remainder</span><span class="p">(</span><span class="nf">get_elem</span><span class="p">(</span><span class="n">qf</span><span class="p">,</span> <span class="n">s</span><span class="p">));</span>
+</span></span><span class="line"><span class="cl">			<span class="k">if</span> <span class="p">(</span><span class="n">rem</span> <span class="o">==</span> <span class="n">fr</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">				<span class="k">return</span> <span class="nb">true</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">			<span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="n">rem</span> <span class="o">&gt;</span> <span class="n">fr</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">				<span class="k">break</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">			<span class="p">}</span>
+</span></span><span class="line"><span class="cl">			<span class="n">s</span> <span class="o">=</span> <span class="nf">incr</span><span class="p">(</span><span class="n">qf</span><span class="p">,</span> <span class="n">s</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">		<span class="p">}</span> <span class="k">while</span> <span class="p">(</span><span class="nf">is_continuation</span><span class="p">(</span><span class="nf">get_elem</span><span class="p">(</span><span class="n">qf</span><span class="p">,</span> <span class="n">s</span><span class="p">)));</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">		<span class="k">if</span> <span class="p">(</span><span class="n">s</span> <span class="o">==</span> <span class="n">start</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">			<span class="cm">/* The old start-of-run becomes a continuation. */</span>
+</span></span><span class="line"><span class="cl">			<span class="kt">uint64_t</span> <span class="n">old_head</span> <span class="o">=</span> <span class="nf">get_elem</span><span class="p">(</span><span class="n">qf</span><span class="p">,</span> <span class="n">start</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">			<span class="nf">set_elem</span><span class="p">(</span><span class="n">qf</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="nf">set_continuation</span><span class="p">(</span><span class="n">old_head</span><span class="p">));</span>
+</span></span><span class="line"><span class="cl">		<span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">			<span class="cm">/* The new element becomes a continuation. */</span>
+</span></span><span class="line"><span class="cl">			<span class="n">entry</span> <span class="o">=</span> <span class="nf">set_continuation</span><span class="p">(</span><span class="n">entry</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">		<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="cm">/* Set the shifted bit if we can&#39;t use the canonical slot. */</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="p">(</span><span class="n">s</span> <span class="o">!=</span> <span class="n">fq</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="n">entry</span> <span class="o">=</span> <span class="nf">set_shifted</span><span class="p">(</span><span class="n">entry</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="nf">insert_into</span><span class="p">(</span><span class="n">qf</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">entry</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">	<span class="o">++</span><span class="n">qf</span><span class="o">-&gt;</span><span class="n">qf_entries</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">	<span class="k">return</span> <span class="nb">true</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>insert_into需要将elt写到s指定的桶。</p>
+<ol>
+<li>在循环中读取s当前的值prev，如果非空的话，需要设置is-shifted标记，并根据是否is-occupied标记，设置curr的is-occupied位，清理prev的is-occupied位。</li>
+<li>更新s的桶为curr。</li>
+<li>重复1和2直到遇到一个空桶。</li>
+</ol>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="cm">/* Insert elt into QF[s], shifting over elements as necessary. */</span>
+</span></span><span class="line"><span class="cl"><span class="k">static</span> <span class="kt">void</span> <span class="nf">insert_into</span><span class="p">(</span><span class="k">struct</span> <span class="n">quotient_filter</span> <span class="o">*</span><span class="n">qf</span><span class="p">,</span> <span class="kt">uint64_t</span> <span class="n">s</span><span class="p">,</span> <span class="kt">uint64_t</span> <span class="n">elt</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="kt">uint64_t</span> <span class="n">prev</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">	<span class="kt">uint64_t</span> <span class="n">curr</span> <span class="o">=</span> <span class="n">elt</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">	<span class="kt">bool</span> <span class="n">empty</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="k">do</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="n">prev</span> <span class="o">=</span> <span class="nf">get_elem</span><span class="p">(</span><span class="n">qf</span><span class="p">,</span> <span class="n">s</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">		<span class="n">empty</span> <span class="o">=</span> <span class="nf">is_empty_element</span><span class="p">(</span><span class="n">prev</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">		<span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">empty</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">			<span class="cm">/* Fix up `is_shifted&#39; and `is_occupied&#39;. */</span>
+</span></span><span class="line"><span class="cl">			<span class="n">prev</span> <span class="o">=</span> <span class="nf">set_shifted</span><span class="p">(</span><span class="n">prev</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">			<span class="k">if</span> <span class="p">(</span><span class="nf">is_occupied</span><span class="p">(</span><span class="n">prev</span><span class="p">))</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">				<span class="n">curr</span> <span class="o">=</span> <span class="nf">set_occupied</span><span class="p">(</span><span class="n">curr</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">				<span class="n">prev</span> <span class="o">=</span> <span class="nf">clr_occupied</span><span class="p">(</span><span class="n">prev</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">			<span class="p">}</span>
+</span></span><span class="line"><span class="cl">		<span class="p">}</span>
+</span></span><span class="line"><span class="cl">		<span class="nf">set_elem</span><span class="p">(</span><span class="n">qf</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">curr</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">		<span class="n">curr</span> <span class="o">=</span> <span class="n">prev</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">		<span class="n">s</span> <span class="o">=</span> <span class="nf">incr</span><span class="p">(</span><span class="n">qf</span><span class="p">,</span> <span class="n">s</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span> <span class="k">while</span> <span class="p">(</span><span class="o">!</span><span class="n">empty</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h2 id="参考资料">参考资料</h2>
+<p><a href="https://zhuanlan.zhihu.com/p/624438262">Quotient Filter 各类操作分析 - 知乎 (zhihu.com)</a></p>
+<p><a href="http://dept.cs.williams.edu/~jannen/teaching/s20/cs333/meetings/Filters-slides.pdf">http://dept.cs.williams.edu/~jannen/teaching/s20/cs333/meetings/Filters-slides.pdf</a></p>
+<p><a href="https://en.wikipedia.org/wiki/Quotient_filter">https://en.wikipedia.org/wiki/Quotient_filter</a></p>
+<p><a href="https://www.gakhov.com/articles/quotient-filters.html">https://www.gakhov.com/articles/quotient-filters.html</a></p>
+<p><a href="https://systemdesign.one/quotient-filter-explained/#variants-of-quotientfilter">https://systemdesign.one/quotient-filter-explained/#variants-of-quotientfilter</a></p>
+]]></content:encoded>
     </item>
     
   </channel>
