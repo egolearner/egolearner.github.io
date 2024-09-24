@@ -399,7 +399,7 @@ write atomicity能够推导出causality，反之不然。</p>
 </ol>
 <p>相同商的指纹的余数构成了一个run，由于冲突的存在，一个run的实际存储位置和正式位置（根据商定位到的bucket）会不同。 run 指的是一段商相同的连续记录的余数，如下图 c、d、e 的商均为 3；cluster 指多个连续的 run，并且首个 run 从商对应的位置开始，而后续的 run 并不是从商对应的位置开始的。如图中标出的 cluster，首个 run 从 3 开始，和商相同，第二个 run 从 6 开始，而余数为 4，第三个 run 从 7 开始，而余数为 6。</p>
 <p>其中在存储余数的同时，还会在每个哈希桶中增设 3 个元信息位<code>is_occupied</code>、<code>is_continuation</code>和<code>is_shifted</code>。<code>is_occupied</code>表示过滤器中是否有和余数对应的商，其与下标所对应的商相同，如 c、d、e 的商均为 3，因此下标为 3 的哈希桶<code>is_occupied</code>位是 1。<code>is_continuation</code>表示当前哈希桶中的余数，是否和左边相邻的元素属于一个 run，如下标 4 的哈希桶中余数，与下标 3 的哈希桶中余数属于一个 run，因此<code>is_continuation</code>为 1。<code>is_shifted</code>表示余数存储的位置是否和余数对应的商表示的下标有偏移，如 c 存储的位置与 c 对应的商表示的下标均为 3，因此<code>is_shifted</code>为 0；而 f 存储的位置为 6，f 对应的商表示的下标为 4，因此<code>is_shifted</code>为 1。</p>
-<img src="/static/quotient%20filter%205cc6b128afa041a3ae2a565a9479ea03/Untitled.png">
+<img src="/images/quotient%20filter%205cc6b128afa041a3ae2a565a9479ea03/Untitled.png">
 <p>上图给出了一个示例，分别是等价的使用开链和使用线性探测结合元信息bit位的hash表示。</p>
 <p><a href="https://en.wikipedia.org/wiki/Quotient_filter">Quotient filter - Wikipedia</a></p>
 <table>
@@ -7795,11 +7795,11 @@ write atomicity能够推导出causality，反之不然。</p>
 </ul>
 </li>
 </ul>
-<img src="/static/PacificA%20Replication%20in%20Log-Based%20Distributed%20Stor%206514f49fc42c4b8a91f2da1663a6af6a/Untitled.png">
+<img src="/images/PacificA%20Replication%20in%20Log-Based%20Distributed%20Stor%206514f49fc42c4b8a91f2da1663a6af6a/Untitled.png">
 <h2 id="22-configuration-management">2.2 Configuration Management</h2>
 <p>使用配置管理器（如Paxos）维护节点信息。在节点疑似失效或者新节点加入时，主节点会提交新配置。只有版本匹配时才允许提交。</p>
 <p>在出现网络分区时，可能有冲突的重新配置请求：主节点想要移除某些从节点，而某些从节点想要移除主节点。因为这些请求都是基于当前的配置，因此第一个被Paxos接受的请求获得胜利，其他冲突的请求因为版本不匹配而被拒绝。</p>
-<img src="/static/PacificA%20Replication%20in%20Log-Based%20Distributed%20Stor%206514f49fc42c4b8a91f2da1663a6af6a/Untitled%201.png">
+<img src="/images/PacificA%20Replication%20in%20Log-Based%20Distributed%20Stor%206514f49fc42c4b8a91f2da1663a6af6a/Untitled%201.png">
 <h2 id="23-leases-and-failure-detection">2.3 Leases and Failure Detection</h2>
 <p>使用租约来防止脑裂问题。</p>
 <p>主节点从每个节点取得租约，然后定期发送beacon来维护租约。如果超过一定时间没有收到从节点对beacon的响应，则租约过期。如果任一租约过期，主节点不再认为自己是主节点，停止处理读写请求，先从Paxos中移除失效的从节点。</p>
@@ -7830,7 +7830,7 @@ Progress: Assuming that communication links between non-faulty servers are relia
 </ol>
 <p>弱化一致性要求：租约过期的主节点或者从节点也允许处理query请求。</p>
 <h1 id="3-replication-for-distributed-log-based-storage-systems">3 REPLICATION FOR DISTRIBUTED LOG-BASED STORAGE SYSTEMS</h1>
-<img src="/static/PacificA%20Replication%20in%20Log-Based%20Distributed%20Stor%206514f49fc42c4b8a91f2da1663a6af6a/Untitled%202.png">
+<img src="/images/PacificA%20Replication%20in%20Log-Based%20Distributed%20Stor%206514f49fc42c4b8a91f2da1663a6af6a/Untitled%202.png">
 <p>上图为单机架构。</p>
 <h2 id="31-logical-replication">3.1 Logical Replication</h2>
 <p>在应用日志基础上加上3个字段：配置版本、序列号、上个提交的序列号，即可以使用一个日志同时作为应用日志和prepared request存储。对于相同序列号的日志，高配置版本会覆盖低版本的日志。</p>
@@ -7914,14 +7914,14 @@ Progress: Assuming that communication links between non-faulty servers are relia
 </blockquote>
 <p>大致是从S中选依次选到p最近的点p*，然后移除S中到p比到p*更远的点，直到S为空。</p>
 <p>SNG的复杂度是O(n2)，因此不可行。本质上来说，HNSW和SSG都是对SNG的近似，因此这些算法输出的图的直径和密度都是不可灵活控制的。</p>
-<img src="/static/DiskANN%20Fast%20Accurate%20Billion-point%20Nearest%20Neighb%20121a2edf1de742c0be953e90c69ed864/Untitled.png">
+<img src="/images/DiskANN%20Fast%20Accurate%20Billion-point%20Nearest%20Neighb%20121a2edf1de742c0be953e90c69ed864/Untitled.png">
 <h2 id="22-健壮剪枝过程">2.2 健壮剪枝过程</h2>
 <p>满足SNG性质的图的直径可能非常大。论文给出的极端情况为所有点都在一条直线上，按照SSG的选边算法每个点只会连接最近的两个点。而按照Vamana的算法，有可能连接更多的点。</p>
 <p>为了解决这个问题，引入乘数α&gt;1要求检索路径上的点到query的距离依次减少α倍。</p>
 <p>如果点p的出邻居通过RobustPrune(p, P \ {p}, α, n-1) 确定，可以保证GreedySearch(s, p, 1, 1) 从任意点s出发将在log复杂度内收敛到 p ∈ P。但是这需要O(n2)的运行时间。Vamana通过精心挑选V和远小于n-1的点来优化索引构建时间。</p>
 <p>RobustPrune最后的裁边中，通过引入α，将距离p*比距离p近1/α倍的点移除掉了，可以保留更多的长边（α越大，越有可能在候选集中保留距离p更远的点）。</p>
 <h2 id="23-vamana索引算法">2.3 Vamana索引算法</h2>
-<img src="/static/DiskANN%20Fast%20Accurate%20Billion-point%20Nearest%20Neighb%20121a2edf1de742c0be953e90c69ed864/Untitled%201.png">
+<img src="/images/DiskANN%20Fast%20Accurate%20Billion-point%20Nearest%20Neighb%20121a2edf1de742c0be953e90c69ed864/Untitled%201.png">
 <ol>
 <li>首先随机初始化G，每个点有R个随机选择的出邻居。</li>
 <li>计算数据集P的中心点s，作为检索算法的起始点。</li>
@@ -7930,7 +7930,7 @@ Progress: Assuming that communication links between non-faulty servers are relia
 </ol>
 <p>随着算法的运行，图变得一致地更好，GreedySearch运行更快。</p>
 <p>整体算法运行两遍，第一次使用α=1运行，第二次使用用户定义的α≥1运行。作者观察到第二次运行得到更好的图，如果两次都用用户定义的α运行会使索引算法变慢，因为第一次运行计算出的图的平均度数更大，计算时间也更长。（第一次运行如果使用α&gt;1的话，候选集中保留了更多的点，最后的度数也会更大）</p>
-<img src="/static/DiskANN%20Fast%20Accurate%20Billion-point%20Nearest%20Neighb%20121a2edf1de742c0be953e90c69ed864/Untitled%202.png">
+<img src="/images/DiskANN%20Fast%20Accurate%20Billion-point%20Nearest%20Neighb%20121a2edf1de742c0be953e90c69ed864/Untitled%202.png">
 <p>第二次运行引入了长边。</p>
 <h2 id="24-对比hnsw和nsg">2.4 对比HNSW和NSG</h2>
 <p>HNSW和NSG没有超参数α，隐含使用了α=1. 这是Vamana实现在图的度数和直径之间更好权衡的主要因素。</p>
@@ -7961,11 +7961,11 @@ Progress: Assuming that communication links between non-faulty servers are relia
 <h2 id="35-使用全精度向量隐式re-ranking">3.5 使用全精度向量隐式Re-Ranking</h2>
 <p>PQ是有损压缩，因此使用PQ和使用真实距离计算的k个候选集可能有差别。为了消除差距，论文使用在每个点的邻居之后存储的全精度向量。邻居关系和全精度向量可以存储在同一扇区内，因此在BeamSearch加载邻居信息时，也可以缓存在搜索过程中访问过的所有点的全精度向量，而不使用额外的SSD读。这可以让我们基于全精度向量来返回top k候选集。（按上面的算法1，访问过的点都是要记录的，有额外的计算开销但没有内存开销。）</p>
 <h1 id="4-评估">4 评估</h1>
-<img src="/static/DiskANN%20Fast%20Accurate%20Billion-point%20Nearest%20Neighb%20121a2edf1de742c0be953e90c69ed864/Untitled%203.png">
+<img src="/images/DiskANN%20Fast%20Accurate%20Billion-point%20Nearest%20Neighb%20121a2edf1de742c0be953e90c69ed864/Untitled%203.png">
 <p>所有数据集中，Vamana超过了HNSW。在GIST1M中，Vamana超过了NSG。另外在三个实验中，Vamana的索引构建时间短于HNSW和NSG。在DEEP1M上，分别为129s, 219s, 480s（包含EFANN构建kNN图的时间）。</p>
-<img src="/static/DiskANN%20Fast%20Accurate%20Billion-point%20Nearest%20Neighb%20121a2edf1de742c0be953e90c69ed864/Untitled%204.png">
+<img src="/images/DiskANN%20Fast%20Accurate%20Billion-point%20Nearest%20Neighb%20121a2edf1de742c0be953e90c69ed864/Untitled%204.png">
 <p>跳数指在检索的关键路径中磁盘访问的轮数。HNSW和NSG有停滞的趋势，而Vamana随最大度数和α的增加跳数在减少。作者推断α&gt;1的Vamana相比其他图算法更有效的利用了SSD提供的大容量。</p>
-<img src="/static/DiskANN%20Fast%20Accurate%20Billion-point%20Nearest%20Neighb%20121a2edf1de742c0be953e90c69ed864/Untitled%205.png">
+<img src="/images/DiskANN%20Fast%20Accurate%20Billion-point%20Nearest%20Neighb%20121a2edf1de742c0be953e90c69ed864/Untitled%205.png">
 <p>为了说明小索引合并算法的有效性，论文分别在高配机器上构建1份大索引和在低配机器上构建k份小索引并合并为1份索引。2(a)中单一索引的性能优于合并索引，因为合并索引需要遍历更多的连接。但合并索引的效果也足够好，优于当时的state-of-art IVFOADC+G+P，延时仅比单一索引慢不到20%.</p>
 <p>由于IVFOADC+G+P在之前的论文中证明了效果优于FAISS，论文只对比了DiskANN和IVFOADC+G+P。IVFOADC+G+P的1-recall@1上限为62.74%，而DiskANN为100%，满足1-recall@1高于95%时的时延在3.5ms以下。</p>
 <h1 id="参考资料">参考资料</h1>
@@ -12132,17 +12132,17 @@ Progress: Assuming that communication links between non-faulty servers are relia
 <h2 id="take-away"><strong>Take Away</strong></h2>
 <h1 id="论文内容">论文内容</h1>
 <h2 id="概述">概述</h2>
-<img src="/static/PolarDB%20Serverless%20A%20Cloud%20Native%20Database%20for%20Dis%207fe5181874d5494aa4df51b19b426dc3/Untitled.png">
+<img src="/images/PolarDB%20Serverless%20A%20Cloud%20Native%20Database%20for%20Dis%207fe5181874d5494aa4df51b19b426dc3/Untitled.png">
 <p>云数据库的典型架构，最右为PolarDB serverless（后面简称PS)。</p>
 <p>单体机和存储计算分离架构的问题是，资源存在绑定关系，不能方便的按需扩展一种资源而不带来其他资源的浪费。</p>
 <p>在PS架构中，cpu, memory和存储都可以独立提升利用率和扩展容量。而且远程内存池的数据页可以被多个数据库进程共享。增加读副本只有少量的本地内存开销。</p>
 <p>从架构上来说，类似于将单机的各组件分布式化，所以也需要用类似cache invalidation的机制来保证事务执行的正确性。分布式化后有网络开销，为了让事务执行更快，使用RDMA高速网络连接各组件，并使用RDMA verb来做优化，例如使用RDMA CAS来优化global latch的获取。</p>
 <h2 id="背景">背景</h2>
-<img src="/static/PolarDB%20Serverless%20A%20Cloud%20Native%20Database%20for%20Dis%207fe5181874d5494aa4df51b19b426dc3/Untitled%201.png">
+<img src="/images/PolarDB%20Serverless%20A%20Cloud%20Native%20Database%20for%20Dis%207fe5181874d5494aa4df51b19b426dc3/Untitled%201.png">
 <p>PolarDB的计算层包括一个主节点（RW）和多个读节点（RO），存储层使用PolarFS。</p>
 <p>存储层的每个chunk有三副本，通过Parallel Raft来保证linear serializable。</p>
 <p>RW和RO通过redo log来同步内存状态，使用LSN来协调一致性。RW将redo log刷新到PolarFS后②，事务即可以提交。RW将redo log已更新和最新的LSN_RW异步广播到所有的RO节点④。RO收到通知后，从PolarFS拉取redo log的更新，应用到buffer pool中。RO将消费的redo log LSN_RO在响应中回复给RW，然后RW可以清除已消费的redo log，将比min{LSN_RO}更老的脏页在后台刷新到PolarFS⑧。落后太多的RO节点被踢出集群，避免拖慢RW刷新脏页。</p>
-<img src="/static/PolarDB%20Serverless%20A%20Cloud%20Native%20Database%20for%20Dis%207fe5181874d5494aa4df51b19b426dc3/Untitled%202.png">
+<img src="/images/PolarDB%20Serverless%20A%20Cloud%20Native%20Database%20for%20Dis%207fe5181874d5494aa4df51b19b426dc3/Untitled%202.png">
 <p>为了保证低延迟，一个数据库实例的计算、内存和存储资源分配在同一PoD下，计算和存储倾向于分配在同一ToR下面。</p>
 <h2 id="设计">设计</h2>
 <p>和PolarDB架构类似，每个PolarDB serverless实例同样由多个代理节点，一个RW节点和多个RO节点构成，使用PolarFS作为底层存储池。</p>
@@ -12196,7 +12196,7 @@ Progress: Assuming that communication links between non-faulty servers are relia
 <p>存储支持页物化卸载，脏页也可以马上弹出而不需要先刷新。</p>
 <p>由于网络延迟，需要本地cache。本地cache的大小采用了经验值远程内存大小/8，128GB.</p>
 <p>如果访问的页不在远程内存中，会从PolarFS中加载，然后写入到远程内存中。并非所有从PolarFS中读到的页都需要写入到远程内存中，例如全表扫描的时候。</p>
-<img src="/static/PolarDB%20Serverless%20A%20Cloud%20Native%20Database%20for%20Dis%207fe5181874d5494aa4df51b19b426dc3/Untitled%203.png">
+<img src="/images/PolarDB%20Serverless%20A%20Cloud%20Native%20Database%20for%20Dis%207fe5181874d5494aa4df51b19b426dc3/Untitled%203.png">
 <p>在PS中，RW可以将修改的页写回到远程内存中，然后RO马上就可见，因此不需要使用PolarDB中的redo log机制。但是，为了降低网络通信的开销，RW的修改会缓存在本地而不是马上同步到远程内存。因此需要cache invalidation机制。</p>
 <p>RW更新本地cached的页后，调用page_invalidate①，它会设置home node上的PIB的相应位，通过查询PRD得到RO节点列表，然后设置这些RO节点上的PIB的相应位。page_invalidate是同步阻塞函数。如果异常的RO节点超时不响应，会被剔出集群以保证page_invalidate成功。</p>
 <h3 id="b树结构一致性">B+树结构一致性</h3>
@@ -12217,7 +12217,7 @@ Progress: Assuming that communication links between non-faulty servers are relia
 <h3 id="页物化卸载page-materialization-offloading">页物化卸载(Page Materialization Offloading)</h3>
 <p>传统单体DB会定期将脏页刷新到持久存储上，但在PS上这么做会导致大量网络通信。</p>
 <p>论文扩展了PolarFS，将日志和页分开存储为log trunk和page trunk。Redo log先持久化到log trunk，然后异步发送到page trunk，log被应用以更新页。为了重用PolarFS的组件和最小化改动，日志只发送到page trunk的leader节点，再由leader节点物化页和通过ParallelRaft传播更新到其他副本。虽然增加了ApplyLog的延迟，但ApplyLog本身是异步操作不是关键路径。</p>
-<img src="/static/PolarDB%20Serverless%20A%20Cloud%20Native%20Database%20for%20Dis%207fe5181874d5494aa4df51b19b426dc3/Untitled%204.png">
+<img src="/images/PolarDB%20Serverless%20A%20Cloud%20Native%20Database%20for%20Dis%207fe5181874d5494aa4df51b19b426dc3/Untitled%204.png">
 <h3 id="auto-scaling">Auto-Scaling</h3>
 <p>在版本升级或跨节点迁移时，proxy节点负责维护客户端连接。暂停事务执行，等待100ms，足以让老的RW节点完成大部分的进行中的语句。之后老的节点刷新脏页到共享内存并关机。同时，RW节点attach到共享内存，初始化本地内存状态。最后，proxy连接到新的RW节点，恢复会话状态，转发等待的语句来执行。老的RW节点没来得及完成的长执行的语句，将会在新的RW节点回滚后重新提交。</p>
 <p>对于长执行的多语句事务，如批量插入，proxy对每个语句跟踪保存点，发生切换时proxy可以让新的RW node从最新的保存点继续执行。</p>

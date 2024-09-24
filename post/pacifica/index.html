@@ -327,11 +327,11 @@ function toggleThemeListener() {
 </ul>
 </li>
 </ul>
-<img src="/static/PacificA%20Replication%20in%20Log-Based%20Distributed%20Stor%206514f49fc42c4b8a91f2da1663a6af6a/Untitled.png">
+<img src="/images/PacificA%20Replication%20in%20Log-Based%20Distributed%20Stor%206514f49fc42c4b8a91f2da1663a6af6a/Untitled.png">
 <h2 id="22-configuration-management">2.2 Configuration Management<a hidden class="anchor" aria-hidden="true" href="#22-configuration-management">¶</a></h2>
 <p>使用配置管理器（如Paxos）维护节点信息。在节点疑似失效或者新节点加入时，主节点会提交新配置。只有版本匹配时才允许提交。</p>
 <p>在出现网络分区时，可能有冲突的重新配置请求：主节点想要移除某些从节点，而某些从节点想要移除主节点。因为这些请求都是基于当前的配置，因此第一个被Paxos接受的请求获得胜利，其他冲突的请求因为版本不匹配而被拒绝。</p>
-<img src="/static/PacificA%20Replication%20in%20Log-Based%20Distributed%20Stor%206514f49fc42c4b8a91f2da1663a6af6a/Untitled%201.png">
+<img src="/images/PacificA%20Replication%20in%20Log-Based%20Distributed%20Stor%206514f49fc42c4b8a91f2da1663a6af6a/Untitled%201.png">
 <h2 id="23-leases-and-failure-detection">2.3 Leases and Failure Detection<a hidden class="anchor" aria-hidden="true" href="#23-leases-and-failure-detection">¶</a></h2>
 <p>使用租约来防止脑裂问题。</p>
 <p>主节点从每个节点取得租约，然后定期发送beacon来维护租约。如果超过一定时间没有收到从节点对beacon的响应，则租约过期。如果任一租约过期，主节点不再认为自己是主节点，停止处理读写请求，先从Paxos中移除失效的从节点。</p>
@@ -362,7 +362,7 @@ Progress: Assuming that communication links between non-faulty servers are relia
 </ol>
 <p>弱化一致性要求：租约过期的主节点或者从节点也允许处理query请求。</p>
 <h1 id="3-replication-for-distributed-log-based-storage-systems">3 REPLICATION FOR DISTRIBUTED LOG-BASED STORAGE SYSTEMS<a hidden class="anchor" aria-hidden="true" href="#3-replication-for-distributed-log-based-storage-systems">¶</a></h1>
-<img src="/static/PacificA%20Replication%20in%20Log-Based%20Distributed%20Stor%206514f49fc42c4b8a91f2da1663a6af6a/Untitled%202.png">
+<img src="/images/PacificA%20Replication%20in%20Log-Based%20Distributed%20Stor%206514f49fc42c4b8a91f2da1663a6af6a/Untitled%202.png">
 <p>上图为单机架构。</p>
 <h2 id="31-logical-replication">3.1 Logical Replication<a hidden class="anchor" aria-hidden="true" href="#31-logical-replication">¶</a></h2>
 <p>在应用日志基础上加上3个字段：配置版本、序列号、上个提交的序列号，即可以使用一个日志同时作为应用日志和prepared request存储。对于相同序列号的日志，高配置版本会覆盖低版本的日志。</p>
